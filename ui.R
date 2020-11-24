@@ -3,7 +3,12 @@ shinyUI(function(request) {tagList(
     tags$br(),
     sidebarLayout(
       sidebarPanel = sidebarPanel(
-        prepara_ui("cargar_datos")
+        tabsetPanel(
+          tabPanel("Cargar datos",
+                   prepara_ui("cargar_datos")),
+          tabPanel("Nube",
+                   nube_ui("nube_datos"))
+        )
       ),
       mainPanel = mainPanel(
         tabsetPanel(

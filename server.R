@@ -16,5 +16,14 @@ shinyServer(function(input, output, session) {
     datos = datos
   )
   
+  # Modulo de datos en la nube
+  
+  callModule(
+    module = nube_server,
+    id = "nube_datos",
+    nombre_id = "nube_datos",
+    datos = datos
+  )
+  
   
 })
