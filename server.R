@@ -8,5 +8,13 @@ shinyServer(function(input, output, session) {
     nombre_id = "cargar_datos"
   )
   
+  # Modulo de columnas
+  
+  callModule(
+    module = columnas_server,
+    id = "convertir_columnas",
+    datos = datos
+  )
+  
   
 })
