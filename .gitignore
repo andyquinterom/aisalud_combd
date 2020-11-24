@@ -1,3 +1,10 @@
+# Carpetas
+
+secrets/
+datos/
+rsconnect/
+**/*.DS_Store
+
 # ---> R
 # History files
 .Rhistory
