@@ -5,6 +5,9 @@ library(stringr)
 library(shiny)
 library(DT)
 library(shinyWidgets)
+library(magrittr)
+library(httr)
+library(rjson)
 
 
 # for (i in paste0("source/", list.files("source/"))) {
@@ -12,6 +15,10 @@ library(shinyWidgets)
 # }
 
 for (i in paste0("modules/", list.files("modules/"))) {
+  source(i)
+}
+
+for (i in paste0("R/", list.files("R/"))) {
   source(i)
 }
 

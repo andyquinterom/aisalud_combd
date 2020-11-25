@@ -4,17 +4,23 @@ shinyUI(function(request) {tagList(
     sidebarLayout(
       sidebarPanel = sidebarPanel(
         tabsetPanel(
-          tabPanel("Cargar datos",
-                   prepara_ui("cargar_datos")),
-          tabPanel("Nube",
-                   nube_ui("nube_datos"))
+          tabPanel(
+            "Datos",
+            prepara_ui("cargar_datos")
+          ),
+          tabPanel(
+            "Agrupadores",
+            prepara_ui("cargar_agrupadores")
+          )
         )
       ),
       mainPanel = mainPanel(
         tabsetPanel(
           tabPanel(title = "Columnas",
                    columnas_ui("convertir_columnas")),
-          tabPanel(title = "Agrupadores"),
+          tabPanel(title = "Agrupadores",
+                   agrupadores_ui("agrupadores"),
+                   columnas_ui("agrupadores_columnas")),
           tabPanel(title = "Filtros")
         )
       )

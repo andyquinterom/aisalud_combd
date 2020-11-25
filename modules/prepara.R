@@ -12,7 +12,7 @@ prepara_ui <- function(id) {
       inputId = ns("file_type"),
       label = "Tipo de archivo",
       inline = TRUE, 
-      choices = c("feather", "csv", "xlsx")),
+      choices = c("feather", "csv", "xlsx", "datos didacticos")),
     fluidRow(
       column(width = 6, actionButton(
         inputId = ns("file_options_open"),
@@ -76,7 +76,22 @@ prepara_server <- function(input, output, session, nombre_id) {
   })
   
   observeEvent(input$file_load, {
+    if (input$file_type == "datos didacticos" &&
+        !is.null(opciones_prepara$value_file)) {
+      datos$data_original <- as.data.table(
+        read_feather(
+          path = paste0("datos/didacticos/", opciones_prepara$value_file))
+      )
+      setnames(datos$data_original, tolower(colnames(datos$data_original)))
+      datos$data_table <- datos$data_original
+      datos$valores_unicos <- lapply(datos$data_table, unique)
+      datos$colnames <- colnames(datos$data_table)
+      columnas_num <- unlist(lapply(datos$data_table[1,], is.numeric))
+      datos$colnames_num <- datos$colnames[columnas_num]
+    }
     if (!is.null(input$file)) {
+      datos$colnames <- NULL
+      datos$colnames_num <- NULL
       if (input$file_type == "csv") {
         datos$data_original <- fread(
           input = input$file$datapath, 
@@ -267,7 +282,7 @@ datos_opciones_cloud_ui <- function(id, value_file) {
   tagList(
     selectizeInput(
       inputId = ns("value_file"),
-      choices = list.files("datos/saved/"),
+      choices = list.files("datos/didacticos/"),
       label = "Archivo:",
       selected = value_file
     )

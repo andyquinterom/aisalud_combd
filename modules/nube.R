@@ -7,10 +7,19 @@ nube_ui <- function(id) {
       actionButton(
         inputId = ns("abrir_modal_conectar"),
         label = "Concetar con la el servicio",
-        width = "100%"
-      )
+        width = "100%"),
+      progressBar(
+        id = ns("almacenamiento_percent"),
+        value = 0, 
+        display_pct = TRUE,
+        striped = TRUE)
     ),
-    fluidRow()
+    fluidRow(
+      actionButton(
+        inputId = ns("subir_tabla"),
+        "Subir tabla"
+      )
+    )
   )
 }
 
@@ -54,27 +63,32 @@ nube_server <- function(input, output, session, datos, nombre_id) {
       paste0(opciones_nube$api_uri, "almacenamiento"),
       query = list(),
       add_headers(Authorization = paste0("Key ", opciones_nube$api_key)))
-    if (status_code(response_index) == 200) {
+    opciones_nube$status_code <- response_index %>%
+      status_code()
+    if (opciones_nube$status_code == 200) {
       showNotification(
         ui = "Status 200. Conectado satisfactoriamente.",
         duration = 10
       )
-      opciones_nube$almacenamiento <- as.numeric(
-        content(response_index)[[1]])
-      almacenamiento_total <- httr::GET(
+      opciones_nube$almacenamiento <- response_index %>%
+        content() %>%
+        unlist() %>%
+        as.numeric()
+      opciones_nube$almacenamiento_total <- httr::GET(
         paste0(opciones_nube$api_uri, "almacenamiento_total"),
         query = list(),
         add_headers(Authorization = paste0(
-          "Key ", opciones_nube$api_key)))
-      tablas <- httr::GET(
+          "Key ", opciones_nube$api_key))) %>%
+        content() %>%
+        unlist() %>%
+        as.numeric()
+      opciones_nube$tablas <- httr::GET(
         paste0(opciones_nube$api_uri, "tablas"),
         query = list(),
         add_headers(Authorization = paste0(
-          "Key ", opciones_nube$api_key)))
-      
-      opciones_nube$almacenamiento_total <- as.numeric(
-        content(almacenamiento_total)[[1]])
-      opciones_nube$tablas <- unlist(content(tablas))
+          "Key ", opciones_nube$api_key))) %>%
+        content() %>%
+        unlist()
       
       print(opciones_nube$almacenamiento)
       print(opciones_nube$almacenamiento_total)
@@ -88,6 +102,44 @@ nube_server <- function(input, output, session, datos, nombre_id) {
         duration = 10
       )
     }
+  })
+  
+  observeEvent(input$subir_tabla, {
+    table_size <- round(as.numeric(object.size(datos$data_table)) / 1048576)
+    print(table_size)
+    print(table_size + opciones_nube$almacenamiento)
+    if (table_size + opciones_nube$almacenamiento <
+        opciones_nube$almacenamiento_total) {
+      withProgress({
+        httr::POST(
+          paste0(opciones_nube$api_uri, "subir"),
+          body = list(
+            "nombre" = "tabla test",
+            "datos" = toJSON(datos$data_table)
+          ),
+          add_headers(Authorization = paste0(
+            "Key ", opciones_nube$api_key))
+        )
+      })
+    }
+  })
+  
+  observeEvent(opciones_nube$almacenamiento, {
+    uso <- (opciones_nube$almacenamiento / 
+              opciones_nube$almacenamiento_total) * 100
+    if (uso <= 75) {
+      status <- "success"
+    } else if (uso < 90) {
+      status <- "warning"
+    } else {
+      status <- "danger"
+    }
+    updateProgressBar(
+      session = session,
+      id = "almacenamiento_percent",
+      value = uso,
+      status = status
+    )
   })
 
   

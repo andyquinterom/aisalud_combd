@@ -1,6 +1,6 @@
 shinyServer(function(input, output, session) {
   
-  # Modulo para cargar datps
+  # Modulo para cargar datos
   
   datos <- callModule(
     module = prepara_server,
@@ -8,12 +8,26 @@ shinyServer(function(input, output, session) {
     nombre_id = "cargar_datos"
   )
   
+  agrupadores <- callModule(
+    module = prepara_server,
+    id = "cargar_agrupadores",
+    nombre_id = "cargar_agrupadores"
+  )
+  
   # Modulo de columnas
   
   callModule(
     module = columnas_server,
     id = "convertir_columnas",
-    datos = datos
+    datos = datos,
+    nombre_id = "convertir_columnas"
+  )
+  
+  callModule(
+    module = columnas_server,
+    id = "agrupadores_columnas",
+    datos = agrupadores,
+    nombre_id = "agrupadores_columnas"
   )
   
   # Modulo de datos en la nube
@@ -23,6 +37,15 @@ shinyServer(function(input, output, session) {
     id = "nube_datos",
     nombre_id = "nube_datos",
     datos = datos
+  )
+  
+  # Modulo de agrupadores
+  
+  callModule(
+    module = agrupadores_server,
+    id = "agrupadores",
+    datos = datos,
+    agrupadores = agrupadores
   )
   
   
