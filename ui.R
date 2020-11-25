@@ -1,6 +1,8 @@
 shinyUI(function(request) {tagList(
   tags$head(
-    tags$link(rel = "stylesheet", type = "text/css", href = "style.css")
+    tags$link(rel = "stylesheet", type = "text/css", href = "style.css"),
+    tags$script(src = "document_ready.js"),
+    tags$script(src = "ResizeSensor.js")
   ),
   fluidPage(
     tags$div(

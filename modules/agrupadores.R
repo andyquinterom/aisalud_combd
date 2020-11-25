@@ -6,9 +6,9 @@ agrupadores_ui <- function(id) {
       column(
         width = 6,
         selectizeInput(
-          inputId = ns("llave_primaria"),
+          inputId = ns("llave_foranea"),
           multiple = TRUE,
-          label = "Llave primaria:",
+          label = "Llave foranea:",
           choices = "Ninguno",
           width = "100%"
         )
@@ -16,9 +16,9 @@ agrupadores_ui <- function(id) {
       column(
         width = 6,
         selectizeInput(
-          inputId = ns("llave_foranea"),
+          inputId = ns("llave_primaria"),
           multiple = TRUE,
-          label = "Llave foranea:",
+          label = "Llave primaria:",
           choices = "Ninguno",
           width = "100%"
         )
@@ -48,7 +48,7 @@ agrupadores_server <- function(input, output, session, datos, agrupadores) {
   observeEvent(datos$colnames, {
     updateSelectizeInput(
       session = session,
-      inputId = "llave_primaria",
+      inputId = "llave_foranea",
       choices = datos$colnames
     )
   })
@@ -56,7 +56,7 @@ agrupadores_server <- function(input, output, session, datos, agrupadores) {
   observeEvent(agrupadores$colnames, {
     updateSelectizeInput(
       session = session,
-      inputId = "llave_foranea",
+      inputId = "llave_primaria",
       choices = agrupadores$colnames
     )
     updateSelectizeInput(
@@ -67,12 +67,12 @@ agrupadores_server <- function(input, output, session, datos, agrupadores) {
   })
   
   observeEvent(input$ejecutar_agrupadores, {
-    columnas_y <- c(input$llave_foranea, input$agrupadores)
+    columnas_y <- c(input$llave_primaria, input$agrupadores)
     datos_agrupados <- merge.data.table(
       x = datos$data_table,
       y = agrupadores$data_table[, c(columnas_y), with = FALSE],
-      by.x = input$llave_primaria,
-      by.y = input$llave_foranea,
+      by.x = input$llave_foranea,
+      by.y = input$llave_primaria,
       all.x = TRUE
     )
     

@@ -15,41 +15,43 @@ columnas_ui <- function(id) {
         width = 7,
         tags$br(),
         tags$div(
-          class = "resumen_columna",
+          class = "well",
           verbatimTextOutput(
             outputId = ns("resumen_columna"),
             placeholder = TRUE
           ),
           fluidRow(
-            column(width = 4, actionButton(
-              inputId = ns("convertir_caracter"),
-              width = "100%",
-              "Carácter"
-            )),
-            column(width = 4, actionButton(
-              inputId = ns("convertir_numerico"),
-              width = "100%",
-              "Numérico"
-            )),
-            column(width = 4, actionButton(
-              inputId = ns("reemplazar_na"),
-              width = "100%",
-              "Reemplazar vacios"
-            ))
-          ),
+            div(class = "botones_convertir_fila_1",
+              column(width = 4, actionButton(
+                inputId = ns("convertir_caracter"),
+                width = "100%",
+                "Carácter"
+              )),
+              column(width = 4, actionButton(
+                inputId = ns("convertir_numerico"),
+                width = "100%",
+                "Numérico"
+              )),
+              column(width = 4, actionButton(
+                inputId = ns("reemplazar_na"),
+                width = "100%",
+                "Llenar vacios"
+              ))
+          )),
           tags$br(),
           fluidRow(
-            column(width = 6, actionButton(
-              inputId = ns("quitar_duplicados"),
-              width = "100%",
-              "Quitar duplicados"
-            )),
-            column(width = 6, actionButton(
-              inputId = ns("remover"),
-              width = "100%",
-              "Remover"
-            ))
-          )
+            div(class = "botones_convertir_fila_2",
+              column(width = 6, actionButton(
+                inputId = ns("quitar_duplicados"),
+                width = "100%",
+                "Quitar duplicados"
+              )),
+              column(width = 6, actionButton(
+                inputId = ns("remover"),
+                width = "100%",
+                "Remover"
+              ))
+          ))
           
         )
       )
@@ -78,7 +80,13 @@ columnas_server <- function(input, output, session, datos, nombre_id) {
             scrollX = TRUE,
             dom = "t"
           )
-        )
+        ) %>%
+          formatStyle(
+            columns = 1,
+            backgroundColor = "#f5f5f5",
+            fontSize = '95%',
+            "white-space"="nowrap"
+          )
       })
     }
   })
