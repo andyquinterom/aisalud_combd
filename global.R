@@ -8,7 +8,9 @@ library(shinyWidgets)
 library(magrittr)
 library(httr)
 library(rjson)
-
+library(writexl)
+library(readxl)
+library(xml2)
 
 # for (i in paste0("source/", list.files("source/"))) {
 #   source(i)

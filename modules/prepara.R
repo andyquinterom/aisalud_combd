@@ -78,6 +78,7 @@ prepara_server <- function(input, output, session, nombre_id) {
   observeEvent(input$file_load, {
     if (input$file_type == "datos didacticos" &&
         !is.null(opciones_prepara$value_file)) {
+      datos$file_name <- opciones_prepara$value_file
       datos$data_original <- as.data.table(
         read_feather(
           path = paste0("datos/didacticos/", opciones_prepara$value_file))
@@ -92,6 +93,10 @@ prepara_server <- function(input, output, session, nombre_id) {
     if (!is.null(input$file)) {
       datos$colnames <- NULL
       datos$colnames_num <- NULL
+      datos$file_name <- sub(
+        ".csv$|.feather$|.txt$|.xlsx$",
+        "",
+        basename(input$file$name))
       if (input$file_type == "csv") {
         datos$data_original <- fread(
           input = input$file$datapath, 

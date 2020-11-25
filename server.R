@@ -48,5 +48,20 @@ shinyServer(function(input, output, session) {
     agrupadores = agrupadores
   )
   
+  # Modulo de filtros
+  
+  callModule(
+    module = filtros_server,
+    id = "filtros",
+    datos = datos
+  )
+  
+  # Modulo de descargas
+  
+  callModule(
+    module = descargar_server,
+    id = "descargar_datos",
+    datos = datos
+  )
   
 })

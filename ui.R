@@ -1,5 +1,11 @@
 shinyUI(function(request) {tagList(
+  tags$head(
+    tags$link(rel = "stylesheet", type = "text/css", href = "style.css")
+  ),
   fluidPage(
+    tags$div(
+      class = "header_combd"
+    ),
     tags$br(),
     sidebarLayout(
       sidebarPanel = sidebarPanel(
@@ -11,6 +17,16 @@ shinyUI(function(request) {tagList(
           tabPanel(
             "Agrupadores",
             prepara_ui("cargar_agrupadores")
+          ),
+          tabPanel(
+            "Descargar",
+            tags$br(),
+            descargar_ui("descargar_datos")
+          ),
+          tabPanel(
+            "nube",
+            tags$br(),
+            nube_ui("nube_datos")
           )
         )
       ),
@@ -19,9 +35,15 @@ shinyUI(function(request) {tagList(
           tabPanel(title = "Columnas",
                    columnas_ui("convertir_columnas")),
           tabPanel(title = "Agrupadores",
+                   tags$br(),
                    agrupadores_ui("agrupadores"),
                    columnas_ui("agrupadores_columnas")),
-          tabPanel(title = "Filtros")
+          tabPanel(title = "Filtros",
+                   fluidRow(
+                     column(width = 12,
+                            filtros_ui("filtros")
+                            )
+                   ))
         )
       )
     )

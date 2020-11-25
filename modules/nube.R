@@ -111,15 +111,16 @@ nube_server <- function(input, output, session, datos, nombre_id) {
     if (table_size + opciones_nube$almacenamiento <
         opciones_nube$almacenamiento_total) {
       withProgress({
-        httr::POST(
+        resultado_subida <- httr::POST(
           paste0(opciones_nube$api_uri, "subir"),
-          body = list(
+          query = list(
             "nombre" = "tabla test",
             "datos" = toJSON(datos$data_table)
           ),
           add_headers(Authorization = paste0(
             "Key ", opciones_nube$api_key))
         )
+        print(content(resultado_subida))
       })
     }
   })
