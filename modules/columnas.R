@@ -7,7 +7,7 @@ columnas_ui <- function(id) {
         width = 5,
         tags$br(),
         tags$div(
-          class = "columnas_lista_div",
+          class = "columnas_lista_div well",
           DT::dataTableOutput(outputId = ns("columnas"))
         )
       ),
@@ -15,7 +15,7 @@ columnas_ui <- function(id) {
         width = 7,
         tags$br(),
         tags$div(
-          class = "well",
+          class = "well opciones_columnas",
           verbatimTextOutput(
             outputId = ns("resumen_columna"),
             placeholder = TRUE
@@ -83,7 +83,7 @@ columnas_server <- function(input, output, session, datos, nombre_id) {
         ) %>%
           formatStyle(
             columns = 1,
-            backgroundColor = "#f5f5f5",
+            backgroundColor = "white",
             fontSize = '95%',
             "white-space"="nowrap"
           )

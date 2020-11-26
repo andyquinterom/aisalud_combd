@@ -3,7 +3,7 @@ resumen <- function(x) {
   
   if (tipo_de_dato == "character") {
     resumen_tabla <- paste0(
-      "Reusmen: \n",
+      "Resumen: \n",
       "Tipo: discreto \n",
       "Tamaño: ", length(x), "\n",
       "Valores únicos: ", uniqueN(x), "\n",
@@ -12,7 +12,7 @@ resumen <- function(x) {
     )
   } else {
     resumen_tabla <- paste0(
-      "Reusmen: \n",
+      "Resumen: \n",
       "Tipo: numérico \n",
       "Tamaño: ", length(x), "\n",
       "Valores únicos: ", uniqueN(x), "\n",

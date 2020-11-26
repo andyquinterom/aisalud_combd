@@ -4,10 +4,10 @@ shinyUI(function(request) {tagList(
     tags$script(src = "document_ready.js"),
     tags$script(src = "ResizeSensor.js")
   ),
+  tags$div(
+    class = "header_combd"
+  ),
   fluidPage(
-    tags$div(
-      class = "header_combd"
-    ),
     tags$br(),
     sidebarLayout(
       sidebarPanel = sidebarPanel(
@@ -26,7 +26,7 @@ shinyUI(function(request) {tagList(
             descargar_ui("descargar_datos")
           ),
           tabPanel(
-            "nube",
+            "Nube",
             tags$br(),
             nube_ui("nube_datos")
           )
