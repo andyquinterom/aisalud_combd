@@ -13,6 +13,8 @@ library(readxl)
 library(xml2)
 library(RPostgres)
 library(DBI)
+library(tidyverse)
+library(batchtools)
 # for (i in paste0("source/", list.files("source/"))) {
 #   source(i)
 # }
