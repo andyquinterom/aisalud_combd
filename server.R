@@ -1,5 +1,9 @@
 shinyServer(function(input, output, session) {
   
+  session$onSessionEnded(function() {
+    dbDisconnect(base_de_datos_con)
+  })
+  
   # Modulo para cargar datos
   
   datos <- callModule(

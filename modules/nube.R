@@ -15,32 +15,12 @@ nube_ui <- function(id) {
         striped = TRUE)
     ),
     uiOutput(ns("ui_conectado"))
-    # fluidRow(
-    #   DT::dataTableOutput(outputId = ns("tablas_lista")),
-    #   actionButton(
-    #     inputId = ns("remover_tabla_seleccionada"),
-    #     label = "Eliminar",
-    #     width = "100%"
-    #   )
-    # ),
-    # fluidRow(
-    #   actionButton(
-    #     inputId = ns("subir_tabla"),
-    #     "Subir tabla"
-    #   )
-    # )
   )
 }
 
 nube_server <- function(input, output, session, datos, nombre_id) {
   
   ns <- NS(nombre_id)
-  
-  session$onSessionEnded(function() {
-    dbDisconnect(base_de_datos_con)
-  })
-  
-  base_de_datos_con <- NULL
   
   opciones_nube <- reactiveValues()
   
@@ -82,16 +62,6 @@ nube_server <- function(input, output, session, datos, nombre_id) {
     if (is.null(base_de_datos_con)) {
       tryCatch(
         expr = {
-          base_de_datos_con <<- dbConnect(
-            RPostgres::Postgres(),
-            dbname = Sys.getenv("DATABASE_NAME"),
-            user = Sys.getenv("DATABASE_USER"),
-            password = Sys.getenv("DATABASE_PW"),
-            host = Sys.getenv("DATABASE_HOST"),
-            port = Sys.getenv("DATABASE_PORT"),
-            sslmode = "require",
-            options = paste0("-c search_path=", Sys.getenv("DATABASE_SCHEMA")))
-          
           opciones_nube$tablas_almacenadas <- dbGetQuery(
             base_de_datos_con,
             paste0("SELECT table_name FROM information_schema.tables
@@ -181,7 +151,9 @@ nube_server <- function(input, output, session, datos, nombre_id) {
         nombre_tabla <- tolower(input$subir_tabla_nombre)
         tryCatch(
           expr = {
-            withProgress({
+            withProgress(
+              message = "Subiendo base de datos a la nube.",
+              expr = {
               opciones_nube$resultados_subidas <- dbWriteTable(
                 con = base_de_datos_con,
                 schema = Sys.getenv("DATABASE_SCHEMA"),
@@ -242,7 +214,6 @@ nube_server <- function(input, output, session, datos, nombre_id) {
     datatable(
       data = data.frame("Tablas" = opciones_nube$tablas_almacenadas),
       rownames = FALSE,
-      editable = TRUE,
       selection = "single",
       options = list(
         ordering = F,
@@ -305,10 +276,12 @@ nube_server <- function(input, output, session, datos, nombre_id) {
             width = "100%"
           )
         ),
+        tags$br(),
         fluidRow(
           actionButton(
             inputId = ns("subir_tabla"),
-            "Subir tabla"
+            "Subir tabla",
+            width = "100%"
           )
         )
       )
