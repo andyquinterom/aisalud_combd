@@ -224,94 +224,57 @@ un_zip_rips <- function(path, folder_unzip, session) {
     numeric = c(10:11)
   )
   
+  datos_en_lista <- list(
+    "us" = list("colnames" = col_names_us, 
+                "col_classes" = col_classes_us,
+                "prefix" = "US"),
+    "af" = list("colnames" = col_names_af, 
+                "col_classes" = col_classes_af,
+                "prefix" = "AF"),
+    "ac" = list("colnames" = col_names_ac, 
+                "col_classes" = col_classes_ac,
+                "prefix" = "AC"),
+    "ap" = list("colnames" = col_names_ap, 
+                "col_classes" = col_classes_ap,
+                "prefix" = "AP"),
+    "au" = list("colnames" = col_names_au, 
+                "col_classes" = col_classes_au,
+                "prefix" = "AU"),
+    "ah" = list("colnames" = col_names_ah, 
+                "col_classes" = col_classes_ah,
+                "prefix" = "AH"),
+    "an" = list("colnames" = col_names_an, 
+                "col_classes" = col_classes_an,
+                "prefix" = "AN"),
+    "am" = list("colnames" = col_names_am, 
+                "col_classes" = col_classes_am,
+                "prefix" = "AM"),
+    "at" = list("colnames" = col_names_at, 
+                "col_classes" = col_classes_at,
+                "prefix" = "AT")
+  )
+  
   # Leer los datos -------------------------------------------
   
   unzip(path, exdir = folder_unzip)
   
-  us <- leer_rips_tabla(
+  datos <- mclapply(
+    X = datos_en_lista,
+    mc.cores = parallel::detectCores(),
     folder_unzip = folder_unzip,
-    col_names = col_names_us,
-    col_classes = col_classes_us,
-    prefix = "US",
-    session = session
-  )
-  
-  af <- leer_rips_tabla(
-    folder_unzip = folder_unzip,
-    col_names = col_names_af,
-    col_classes = col_classes_af,
-    prefix = "AF",
-    session = session
-  )
-  
-  ac <- leer_rips_tabla(
-    folder_unzip = folder_unzip,
-    col_names = col_names_ac,
-    col_classes = col_classes_ac,
-    prefix = "AC",
-    session = session
-  )
-  
-  ap <- leer_rips_tabla(
-    folder_unzip = folder_unzip,
-    col_names = col_names_ap,
-    col_classes = col_classes_ap,
-    prefix = "AP",
-    session = session
-  )
-  
-  au <- leer_rips_tabla(
-    folder_unzip = folder_unzip,
-    col_names = col_names_au,
-    col_classes = col_classes_au,
-    prefix = "AU",
-    session = session
-  )
-  
-  ah <- leer_rips_tabla(
-    folder_unzip = folder_unzip,
-    col_names = col_names_ah,
-    col_classes = col_classes_ah,
-    prefix = "AH",
-    session = session
-  )
-  
-  an <- leer_rips_tabla(
-    folder_unzip = folder_unzip,
-    col_names = col_names_an,
-    col_classes = col_classes_an,
-    prefix = "AN",
-    session = session
-  )
-  
-  am <- leer_rips_tabla(
-    folder_unzip = folder_unzip,
-    col_names = col_names_am,
-    col_classes = col_classes_am,
-    prefix = "AM",
-    session = session
-  )
-  
-  at <- leer_rips_tabla(
-    folder_unzip = folder_unzip,
-    col_names = col_names_at,
-    col_classes = col_classes_at,
-    prefix = "AT",
-    session = session
+    FUN = function(x, folder_unzip) {
+      leer_rips_tabla(
+        folder_unzip = folder_unzip,
+        col_names = x$colnames,
+        col_classes = x$col_classes,
+        prefix = x$prefix,
+        session = NULL
+      )
+    }
   )
   
   return(
-    list(
-      us = us, 
-      af = af, 
-      ac = ac, 
-      ap = ap,
-      au = au,
-      ah = ah,
-      an = an,
-      am = am,
-      at = at
-    )
+    datos
   )
 }
 

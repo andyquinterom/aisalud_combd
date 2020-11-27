@@ -8,13 +8,13 @@ nube_ui <- function(id) {
         inputId = ns("conectar_al_servicio"),
         label = "Concetar con la el servicio",
         width = "100%"),
-      progressBar(
+      shinyWidgets::progressBar(
         id = ns("almacenamiento_percent"),
         value = 100, 
         display_pct = TRUE,
         striped = TRUE)
     ),
-    uiOutput(ns("ui_conectado"))
+    uiOutput(ns("ui_conectado")) %>% withSpinner()
   )
 }
 

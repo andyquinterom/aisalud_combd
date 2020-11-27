@@ -138,8 +138,9 @@ prepara_server <- function(input, output, session, nombre_id) {
           withProgress(
             min = 0,
             max = 1,
-            value = 0,
-            message = "Empezando proceso...",
+            value = 0.5,
+            message = "Leyendo archivos...",
+            detail = "Puede tardar varios minutos...",
             expr = {
               folder_unzip <- tempfile()
               dir.create(path = folder_unzip)

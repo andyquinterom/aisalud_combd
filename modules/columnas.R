@@ -8,7 +8,7 @@ columnas_ui <- function(id) {
         tags$br(),
         tags$div(
           class = "columnas_lista_div well",
-          DT::dataTableOutput(outputId = ns("columnas"))
+          DT::dataTableOutput(outputId = ns("columnas")) %>% withSpinner()
         )
       ),
       column(
@@ -18,8 +18,7 @@ columnas_ui <- function(id) {
           class = "well opciones_columnas",
           verbatimTextOutput(
             outputId = ns("resumen_columna"),
-            placeholder = TRUE
-          ),
+            placeholder = TRUE) %>% withSpinner(),
           fluidRow(
             div(class = "botones_convertir_fila_1",
               column(width = 4, actionButton(
