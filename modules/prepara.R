@@ -30,14 +30,6 @@ prepara_server <- function(input, output, session, nombre_id) {
   
   id <- nombre_id
   ns <- NS(id)
-  if (exists("folder_unzip")) {
-    unlink(folder_unzip)
-  }
-  folder_unzip <- tempdir()
-  
-  session$onSessionEnded(function() {
-    unlink(folder_unzip)
-  })
   
   opciones_prepara <- reactiveValues(
     "value_decimal" = ".",
@@ -143,22 +135,21 @@ prepara_server <- function(input, output, session, nombre_id) {
       }
       if (input$file_type == "RIPS") {
         if (is.null(opciones_prepara$prestadores_unicos)) {
-          unlink(folder_unzip)
-          folder_unzip <<- tempdir()
           withProgress(
             min = 0,
             max = 1,
             value = 0,
             message = "Empezando proceso...",
             expr = {
+              folder_unzip <- tempfile()
+              dir.create(path = folder_unzip)
               datos$rips <- un_zip_rips(
                 path = input$file$datapath,
                 session = session,
                 folder_unzip = folder_unzip)
+              unlink(folder_unzip)
             }
           )
-          unlink(folder_unzip)
-          folder_unzip <<- tempdir()
           print(colnames(datos$rips$af$tabla))
           opciones_prepara$prestadores_unicos_lista <- 
             datos$rips[["af"]][["tabla"]][, c(

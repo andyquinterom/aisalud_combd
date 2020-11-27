@@ -4,21 +4,21 @@ consolidar_rips <- function(prestadores = NULL, ac, af, ah, am, ap, at, au, us,
   # Los diferentes archivos se transforman a un objecto de tipo data.table
   # Se filtran para solo obtener datos de los prestadores seleccionados
   if (!is.null(prestadores)) {
-    ac <- as.data.table(ac)[cod_prestador %in% prestadores]
-    af <- as.data.table(af)[cod_prestador %in% prestadores]
-    ah <- as.data.table(ah)[cod_prestador %in% prestadores]
-    am <- as.data.table(am)[cod_prestador %in% prestadores]
-    ap <- as.data.table(ap)[cod_prestador %in% prestadores]
-    at <- as.data.table(at)[cod_prestador %in% prestadores]
-    au <- as.data.table(au)[cod_prestador %in% prestadores]
+    ac <- copy(ac)[cod_prestador %in% prestadores]
+    af <- copy(af)[cod_prestador %in% prestadores]
+    ah <- copy(ah)[cod_prestador %in% prestadores]
+    am <- copy(am)[cod_prestador %in% prestadores]
+    ap <- copy(ap)[cod_prestador %in% prestadores]
+    at <- copy(at)[cod_prestador %in% prestadores]
+    au <- copy(au)[cod_prestador %in% prestadores]
   } else {
-    ac <- as.data.table(ac)
-    af <- as.data.table(af)
-    ah <- as.data.table(ah)
-    am <- as.data.table(am)
-    ap <- as.data.table(ap)
-    at <- as.data.table(at)
-    au <- as.data.table(au)
+    ac <- copy(ac)
+    af <- copy(af)
+    ah <- copy(ah)
+    am <- copy(am)
+    ap <- copy(ap)
+    at <- copy(at)
+    au <- copy(au)
   }
   
   # El ambito de consultas siempre es ambulatorio
@@ -195,10 +195,6 @@ consolidar_rips <- function(prestadores = NULL, ac, af, ah, am, ap, at, au, us,
                                 fill = TRUE)
     
   }
-  
-  # Cambiar nombres de columnas valor.x y valor.y después del merge
-  setnames(merge_prestaciones, "valor.x", "valor_factura")
-  setnames(merge_prestaciones, "valor.y", "valor")
   
   # Juntar datos de usuarios con las prestaciones
   if (nrow(us) != 0) {

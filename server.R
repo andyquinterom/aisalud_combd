@@ -2,6 +2,7 @@ shinyServer(function(input, output, session) {
   
   session$onSessionEnded(function() {
     dbDisconnect(base_de_datos_con)
+    unlink(tempdir())
   })
   
   # Modulo para cargar datos

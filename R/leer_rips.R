@@ -42,11 +42,12 @@ un_zip_rips <- function(path, folder_unzip, session) {
     "valor_copago",
     "valor_comision",
     "valor_descuentos",
-    "valor"
+    "valor_factura"
   )
   
   col_classes_af <- list(
-    character = c(1:17)
+    character = c(1:13),
+    numeric = c(14:17)
   )
   
   # Colnames para AC -------------------------
@@ -72,7 +73,8 @@ un_zip_rips <- function(path, folder_unzip, session) {
   )
   
   col_classes_ac <- list(
-    character = c(1:17)
+    character = c(1:14),
+    numeric = c(15:17)
   )
   
   # Colnames para AP -------------------------
@@ -96,7 +98,8 @@ un_zip_rips <- function(path, folder_unzip, session) {
   )
   
   col_classes_ap <- list(
-    character = c(1:15)
+    character = c(1:14),
+    numeric = c(15)
   )
   
   # Colnames para AU -------------------------
@@ -196,7 +199,8 @@ un_zip_rips <- function(path, folder_unzip, session) {
   )
   
   col_classes_am <- list(
-    character = c(1:14)
+    character = c(1:12),
+    numeric = c(13:14)
   )
   
   # Colnames para AT -------------------------
@@ -216,7 +220,8 @@ un_zip_rips <- function(path, folder_unzip, session) {
   )
   
   col_classes_at <- list(
-    character = c(1:11)
+    character = c(1:9),
+    numeric = c(10:11)
   )
   
   # Leer los datos -------------------------------------------
@@ -336,8 +341,8 @@ leer_rips_todos <- function(datos, prestadores, cups, session = NULL) {
   )
   
   consolidados[, "valor" := as.numeric(valor)]
-  consolidados[, "valor" := as.numeric(valor_factura)]
-  consolidados[, "cantidad" := as.numeric(valor)]
+  consolidados[, "valor_factura" := as.numeric(valor_factura)]
+  consolidados[, "cantidad" := as.numeric(cantidad)]
   
   return(consolidados)
   
