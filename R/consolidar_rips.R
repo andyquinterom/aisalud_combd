@@ -238,6 +238,36 @@ consolidar_rips <- function(prestadores = NULL, ac, af, ah, am, ap, at, au, us,
     )
   }
   
+  merge_prestaciones[, "mes" := lubridate::month(
+      as.Date(fecha_prestacion, format = "%d/%m/%Y"))]
+  
+  merge_prestaciones[, "anio" := lubridate::year(
+    as.Date(fecha_prestacion, format = "%d/%m/%Y"))]
+  
+  merge_prestaciones[, "mes_anio" := paste(anio, mes_spanish(mes),
+    sep = " - ")]
+  
   return(merge_prestaciones)
+  
+}
+
+mes_spanish <- function(x) {
+  meses <- c(
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre"
+  )
+  return(
+    meses[x]
+  )
   
 }
