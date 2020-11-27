@@ -12,7 +12,7 @@ prepara_ui <- function(id) {
       inputId = ns("file_type"),
       label = "Tipo de archivo",
       inline = TRUE, 
-      choices = c("feather", "csv", "xlsx", "datos didacticos")),
+      choices = c("feather", "csv", "datos didacticos")),
     fluidRow(
       column(width = 6, actionButton(
         inputId = ns("file_options_open"),
@@ -98,9 +98,14 @@ prepara_server <- function(input, output, session, nombre_id) {
         "",
         basename(input$file$name))
       if (input$file_type == "csv") {
+        value_delimitador <- ifelse(
+          test = opciones_prepara$value_delimitador == "Espacios",
+          yes = "\t",
+          no = opciones_prepara$value_delimitador
+        )
         datos$data_original <- fread(
           input = input$file$datapath, 
-          sep = opciones_prepara$value_delimitador, 
+          sep = value_delimitador, 
           dec = opciones_prepara$value_decimal,
           data.table = TRUE)
         setnames(datos$data_original, tolower(colnames(datos$data_original)))
@@ -114,20 +119,6 @@ prepara_server <- function(input, output, session, nombre_id) {
         datos$data_original <- as.data.table(
           read_feather(
             path = input$file$datapath)
-        )
-        setnames(datos$data_original, tolower(colnames(datos$data_original)))
-        datos$data_table <- datos$data_original
-        datos$valores_unicos <- lapply(datos$data_table, unique)
-        datos$colnames <- colnames(datos$data_table)
-        columnas_num <- unlist(lapply(datos$data_table[1,], is.numeric))
-        datos$colnames_num <- datos$colnames[columnas_num]
-      }
-      if (input$file_type == "xlsx") {
-        datos$data_original <- as.data.table(
-          read_excel(
-            path = input$file$datapath, 
-            sheet = opciones_prepara$value_sheet, 
-            range = opciones_prepara$value_range)
         )
         setnames(datos$data_original, tolower(colnames(datos$data_original)))
         datos$data_table <- datos$data_original
@@ -215,16 +206,6 @@ datos_opciones_ui <- function(
     )
   }
   
-  if (file_type == "xlsx") {
-    return(
-      datos_opciones_xlsx_ui(
-        id = id,
-        value_sheet = value_sheet,
-        value_range = value_range
-      )
-    )
-  }
-  
   if (file_type == "datos didacticos") {
     return(
       datos_opciones_cloud_ui(
@@ -256,27 +237,6 @@ datos_opciones_csv_ui <- function(id, value_delimitador, value_decimal) {
       inline = TRUE,
       selected = value_decimal
     )
-  )
-  
-}
-
-datos_opciones_xlsx_ui <- function(id, value_sheet, value_range) {
-  ns <- NS(id)
-  
-  tagList(
-    textInput(
-      inputId = ns("value_sheet"),
-      label = "Nombre de la hoja",
-      placeholder = "Sheet1",
-      value = value_sheet
-    ),
-    
-    textInput(
-      inputId = ns("value_range"),
-      label = "Rango",
-      placeholder = "A1:A1",
-      value = value_range
-    ),
   )
   
 }
