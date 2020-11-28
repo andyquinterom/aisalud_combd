@@ -76,112 +76,125 @@ prepara_server <- function(input, output, session, nombre_id) {
   })
   
   observeEvent(input$file_load, {
-    if (input$file_type == "datos didacticos" &&
-        !is.null(opciones_prepara$value_file)) {
-      datos$file_name <- opciones_prepara$value_file
-      datos$data_original <- as.data.table(
-        read_feather(
-          path = paste0("datos/didacticos/", opciones_prepara$value_file))
-      )
-      setnames(datos$data_original, tolower(colnames(datos$data_original)))
-      datos$data_table <- datos$data_original
-      datos$valores_unicos <- lapply(datos$data_table, unique)
-      datos$colnames <- colnames(datos$data_table)
-      columnas_num <- unlist(lapply(datos$data_table[1,], is.numeric))
-      datos$colnames_num <- datos$colnames[columnas_num]
-    }
-    if (!is.null(input$file)) {
-      if (input$file_type == "csv") {
-        datos$colnames <- NULL
-        datos$colnames_num <- NULL
-        datos$file_name <- sub(
-          ".csv$|.feather$|.txt$|.xlsx$",
-          "",
-          basename(input$file$name))
-        value_delimitador <- ifelse(
-          test = opciones_prepara$value_delimitador == "Espacios",
-          yes = "\t",
-          no = opciones_prepara$value_delimitador
-        )
-        datos$data_original <- fread(
-          input = input$file$datapath, 
-          sep = value_delimitador, 
-          dec = opciones_prepara$value_decimal,
-          data.table = TRUE)
-        setnames(datos$data_original, tolower(colnames(datos$data_original)))
-        datos$data_table <- datos$data_original
-        datos$valores_unicos <- lapply(datos$data_table, unique)
-        datos$colnames <- colnames(datos$data_table)
-        columnas_num <- unlist(lapply(datos$data_table[1,], is.numeric))
-        datos$colnames_num <- datos$colnames[columnas_num]
-      } 
-      if (input$file_type == "feather") {
-        datos$colnames <- NULL
-        datos$colnames_num <- NULL
-        datos$file_name <- sub(
-          ".csv$|.feather$|.txt$|.xlsx$",
-          "",
-          basename(input$file$name))
-        datos$data_original <- as.data.table(
-          read_feather(
-            path = input$file$datapath)
-        )
-        setnames(datos$data_original, tolower(colnames(datos$data_original)))
-        datos$data_table <- datos$data_original
-        datos$valores_unicos <- lapply(datos$data_table, unique)
-        datos$colnames <- colnames(datos$data_table)
-        columnas_num <- unlist(lapply(datos$data_table[1,], is.numeric))
-        datos$colnames_num <- datos$colnames[columnas_num]
-      }
-      if (input$file_type == "RIPS") {
-        if (is.null(opciones_prepara$prestadores_unicos)) {
-          withProgress(
-            min = 0,
-            max = 1,
-            value = 0.5,
-            message = "Leyendo archivos...",
-            detail = "Puede tardar varios minutos...",
-            expr = {
-              folder_unzip <- tempfile()
-              dir.create(path = folder_unzip)
-              datos$rips <- un_zip_rips(
-                path = input$file$datapath,
-                session = session,
-                folder_unzip = folder_unzip)
-              unlink(folder_unzip)
-            }
+    tryCatch(
+      expr = {
+        if (input$file_type == "datos didacticos" &&
+            !is.null(opciones_prepara$value_file)) {
+          datos$file_name <- opciones_prepara$value_file
+          datos$data_original <- as.data.table(
+            read_feather(
+              path = paste0("datos/didacticos/", opciones_prepara$value_file))
           )
-          print(colnames(datos$rips$af$tabla))
-          opciones_prepara$prestadores_unicos_lista <- 
-            datos$rips[["af"]][["tabla"]][, c(
-              "nombre_prestador", "cod_prestador")] %>%
-            unique() %>%
-            t()
-          colnames(opciones_prepara$prestadores_unicos_lista) <- 
-            opciones_prepara$prestadores_unicos_lista[1,]
-          opciones_prepara$prestadores_unicos <- 
-            opciones_prepara$prestadores_unicos_lista[-1,]
+          setnames(datos$data_original, tolower(colnames(datos$data_original)))
+          datos$data_table <- datos$data_original
+          datos$valores_unicos <- lapply(datos$data_table, unique)
+          datos$colnames <- colnames(datos$data_table)
+          columnas_num <- unlist(lapply(datos$data_table[1,], is.numeric))
+          datos$colnames_num <- datos$colnames[columnas_num]
         }
-        showModal(
+        if (!is.null(input$file)) {
+          if (input$file_type == "csv") {
+            datos$colnames <- NULL
+            datos$colnames_num <- NULL
+            datos$file_name <- sub(
+              ".csv$|.feather$|.txt$|.xlsx$",
+              "",
+              basename(input$file$name))
+            value_delimitador <- ifelse(
+              test = opciones_prepara$value_delimitador == "Espacios",
+              yes = "\t",
+              no = opciones_prepara$value_delimitador
+            )
+            datos$data_original <- fread(
+              input = input$file$datapath, 
+              sep = value_delimitador, 
+              dec = opciones_prepara$value_decimal,
+              data.table = TRUE)
+            setnames(datos$data_original, tolower(colnames(datos$data_original)))
+            datos$data_table <- datos$data_original
+            datos$valores_unicos <- lapply(datos$data_table, unique)
+            datos$colnames <- colnames(datos$data_table)
+            columnas_num <- unlist(lapply(datos$data_table[1,], is.numeric))
+            datos$colnames_num <- datos$colnames[columnas_num]
+          } 
+          if (input$file_type == "feather") {
+            datos$colnames <- NULL
+            datos$colnames_num <- NULL
+            datos$file_name <- sub(
+              ".csv$|.feather$|.txt$|.xlsx$",
+              "",
+              basename(input$file$name))
+            datos$data_original <- as.data.table(
+              read_feather(
+                path = input$file$datapath)
+            )
+            setnames(datos$data_original, tolower(colnames(datos$data_original)))
+            datos$data_table <- datos$data_original
+            datos$valores_unicos <- lapply(datos$data_table, unique)
+            datos$colnames <- colnames(datos$data_table)
+            columnas_num <- unlist(lapply(datos$data_table[1,], is.numeric))
+            datos$colnames_num <- datos$colnames[columnas_num]
+          }
+          if (input$file_type == "RIPS") {
+            if (is.null(opciones_prepara$prestadores_unicos)) {
+              withProgress(
+                min = 0,
+                max = 1,
+                value = 0.5,
+                message = "Leyendo archivos...",
+                detail = "Puede tardar varios minutos...",
+                expr = {
+                  folder_unzip <- tempfile()
+                  dir.create(path = folder_unzip)
+                  datos$rips <- un_zip_rips(
+                    path = input$file$datapath,
+                    session = session,
+                    folder_unzip = folder_unzip)
+                  unlink(folder_unzip)
+                }
+              )
+              print(colnames(datos$rips$af$tabla))
+              opciones_prepara$prestadores_unicos_lista <- 
+                datos$rips[["af"]][["tabla"]][, c(
+                  "nombre_prestador", "cod_prestador")] %>%
+                unique() %>%
+                t()
+              colnames(opciones_prepara$prestadores_unicos_lista) <- 
+                opciones_prepara$prestadores_unicos_lista[1,]
+              opciones_prepara$prestadores_unicos <- 
+                opciones_prepara$prestadores_unicos_lista[-1,]
+            }
+            showModal(
+              session = session,
+              ui = modalDialog(
+                title = "Prestadores a consolidar.",
+                easyClose = TRUE,
+                fade = TRUE,
+                selectizeInput(
+                  choices = opciones_prepara$prestadores_unicos,
+                  inputId = ns("consolidar_rips_prestador"),
+                  label = NULL,
+                  width = "100%"
+                ),
+                footer = actionButton(
+                  inputId = ns("consolidar_rips_confirmar"),
+                  label = "Consolidar")
+              )
+            )
+            
+          }
+        }
+      },
+      error = function(e) {
+        print(e[1])
+        sendSweetAlert(
           session = session,
-          ui = modalDialog(
-            title = "Prestadores a consolidar.",
-            easyClose = TRUE,
-            fade = TRUE,
-            selectizeInput(
-              choices = opciones_prepara$prestadores_unicos,
-              inputId = ns("consolidar_rips_prestador"),
-              label = NULL,
-              width = "100%"
-            ),
-            footer = actionButton(
-              inputId = ns("consolidar_rips_confirmar"),
-              label = "Consolidar")
-          )
+          title = "Error",
+          text = e[1],
+          type = "error"
         )
-        
       }
-    }
+    )
   })
   
   observeEvent(input$consolidar_rips_confirmar, {

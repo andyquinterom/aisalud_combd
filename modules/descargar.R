@@ -33,7 +33,7 @@ descargar_server <- function(input, output, session, datos) {
   
   output$descargar_feather <- downloadHandler(
     filename = function() {
-      paste(datos$file_name,
+      paste("base_de_datos",
             ".feather", sep="")
     },
     content = function(file) {
@@ -46,7 +46,7 @@ descargar_server <- function(input, output, session, datos) {
   
   output$descargar_csv <- downloadHandler(
     filename = function() {
-      paste(datos$file_name,
+      paste("base_de_datos",
             ".csv", sep="")
     },
     content = function(file) {
@@ -59,7 +59,7 @@ descargar_server <- function(input, output, session, datos) {
   
   output$descargar_xlsx <- downloadHandler(
     filename = function() {
-      paste(datos$file_name,
+      paste("base_de_datos",
             ".xlsx", sep="")
     },
     content = function(file) {
