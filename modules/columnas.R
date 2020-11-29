@@ -222,7 +222,7 @@ columnas_server <- function(input, output, session, datos, nombre_id) {
     if (input$reemplazar_na_confirmar && 
         !is.null(input$columnas_rows_selected)) {
       datos$data_original[is.na(get(datos$colnames[input$columnas_rows_selected])),
-                       datos$colnames[input$columnas_rows_selected] := "NA"]
+                       datos$colnames[input$columnas_rows_selected] := "NULO"]
       datos$data_table <- copy(datos$data_original)
     }
   })
