@@ -45,6 +45,6 @@ base_de_datos_con <- dbConnect(
 
 dbSendQuery(
   base_de_datos_con,
-  str_replace_all("SET search_path = '######', public;",
+  str_replace_all("SET search_path = public, ######;",
                   "######", Sys.getenv("DATABASE_SCHEMA"))
 )

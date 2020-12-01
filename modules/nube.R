@@ -156,8 +156,8 @@ nube_server <- function(input, output, session, datos, nombre_id) {
               expr = {
               opciones_nube$resultados_subidas <- dbWriteTable(
                 con = base_de_datos_con,
-                schema = Sys.getenv("DATABASE_SCHEMA"),
-                name = nombre_tabla,
+                name = Id(table = nombre_tabla,
+                          schema = Sys.getenv("DATABASE_SCHEMA")),
                 value = datos$data_table
               )
             })
