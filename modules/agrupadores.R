@@ -67,22 +67,34 @@ agrupadores_server <- function(input, output, session, datos, agrupadores) {
   })
   
   observeEvent(input$ejecutar_agrupadores, {
-    columnas_y <- c(input$llave_primaria, input$agrupadores)
-    datos_agrupados <- merge.data.table(
-      x = datos$data_table,
-      y = agrupadores$data_table[, c(columnas_y), with = FALSE],
-      by.x = input$llave_foranea,
-      by.y = input$llave_primaria,
-      all.x = TRUE
+    tryCatch(
+      expr = {
+        columnas_y <- c(input$llave_primaria, input$agrupadores)
+        datos_agrupados <- merge.data.table(
+          x = datos$data_table,
+          y = agrupadores$data_table[, c(columnas_y), with = FALSE],
+          by.x = input$llave_foranea,
+          by.y = input$llave_primaria,
+          all.x = TRUE
+        )
+        
+        datos$data_original <- datos_agrupados
+        datos$data_table <- datos_agrupados
+        datos$colnames <- NULL
+        datos$colnames <- colnames(datos$data_table)
+        datos$colnames_num <- NULL
+        columnas_num <- unlist(lapply(datos$data_table[1,], is.numeric))
+        datos$colnames_num <- datos$colnames[columnas_num]
+      },
+      error = function(e) {
+        print(e)
+        showNotification(
+          ui = "Error agrupando.",
+          type = "error",
+          session = session
+        )
+      }
     )
-    
-    datos$data_original <- datos_agrupados
-    datos$data_table <- datos_agrupados
-    datos$colnames <- NULL
-    datos$colnames <- colnames(datos$data_table)
-    datos$colnames_num <- NULL
-    columnas_num <- unlist(lapply(datos$data_table[1,], is.numeric))
-    datos$colnames_num <- datos$colnames[columnas_num]
     
   })
   

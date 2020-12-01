@@ -32,6 +32,11 @@ filtros_server <- function(input, output, session, datos) {
   n_num = 3
   n_char = 5
   
+  selected_cache <- reactiveValues(
+    "num" = rep("Ninguno", n_num),
+    "char" = rep("Ninguno", n_char)
+  )
+  
   observeEvent(datos$colnames, {
     lapply(
       X = 1:n_char,
@@ -39,7 +44,12 @@ filtros_server <- function(input, output, session, datos) {
         updatePickerInput(
           session = session,
           inputId = paste("filtro_char_columna", x, sep = "_"),
-          choices = c("Ninguno", datos$colnames)
+          choices = c("Ninguno", datos$colnames),
+          selected = ifelse(
+            test = selected_cache$char[x] %in% c("Ninguno", datos$colnames),
+            yes = selected_cache$char[x],
+            no = {selected_cache$char[x] <- "Ninguno"
+            "Ninguno"})
         )
       }
     )
@@ -49,7 +59,12 @@ filtros_server <- function(input, output, session, datos) {
         updatePickerInput(
           session = session,
           inputId = paste("filtro_num_columna", x, sep = "_"),
-          choices = c("Ninguno", datos$colnames_num)
+          choices = c("Ninguno", datos$colnames_num),
+          selected = ifelse(
+            test = selected_cache$num[x] %in% c("Ninguno", datos$colnames_num),
+            yes = selected_cache$num[x],
+            no = {selected_cache$num[x] <- "Ninguno"
+            "Ninguno"})
         )
       }
     )
@@ -133,12 +148,14 @@ filtros_server <- function(input, output, session, datos) {
   )
   
   observeEvent(input$aplicar_filtros, {
+    
     inputs_filtros_char <- c()
     
     inputs_filtros_char <- unlist(
       lapply(
         X = 1:n_char,
         FUN = function(i) {
+          selected_cache$char[i] <- input[[paste0("filtro_char_columna_", i)]]
           return(input[[paste0("filtro_char_columna_", i)]] != "Ninguno")
         }
       )
@@ -170,6 +187,7 @@ filtros_server <- function(input, output, session, datos) {
       lapply(
         X = 1:n_char,
         FUN = function(i) {
+          input[[paste0("filtro_num_columna_", i)]]
           return(input[[paste0("filtro_num_columna_", i)]] != "Ninguno")
         }
       )

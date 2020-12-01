@@ -101,6 +101,7 @@ columnas_server <- function(input, output, session, datos, nombre_id) {
       input$columnas_cell_edit$row,
       input$columnas_cell_edit$value
     )
+    datos$colnames <- NULL
     datos$colnames <- names(datos$data_table)
   })
   
