@@ -21,11 +21,19 @@ consolidar_rips <- function(prestadores = NULL, ac, af, ah, am, ap, at, au, us,
     au <- copy(au)
   }
   
-  # El ambito de consultas siempre es ambulatorio
-  ac$ambito <- "1"
+  # Ambito de procedimientos se hace NULL
   
-  # EL ambito de medicamentos sera su tipo
-  am$ambito <- am$tipo_medicamento
+  ap[, 'ambito' := NULL]
+  
+  # El tipo de servicio de consultas siempre es ambulatorio
+  ac[, 'tipo_servicio' := "Consultas"]
+  
+  # El tipo de servicio de procedicimiento se hace procedimientos
+  
+  ap[, 'tipo_servicio' := "Procedimientos"]
+  
+  # EL tipo de servicio de medicamentos sera su tipo
+  am[, 'tipo_servicio' := tipo_medicamento]
   
   # La cantidad de consultas y procedimientos siemore es 1
   ac$cantidad <- 1
@@ -56,7 +64,7 @@ consolidar_rips <- function(prestadores = NULL, ac, af, ah, am, ap, at, au, us,
   
   tryCatch(
     expr = {
-      am$ambito <- conversion_tipomedicamento(am$ambito)
+      am$tipo_servicio <- conversion_tipomedicamento(am$tipo_servicio)
     },
     error = function(e) {
       print(e)
@@ -71,7 +79,7 @@ consolidar_rips <- function(prestadores = NULL, ac, af, ah, am, ap, at, au, us,
   setnames(am, 6, "cod_prestacion")
   setnames(at, 8, "nombre_prestacion")
   setnames(am, 8, "nombre_prestacion")
-  setnames(at, 6, "ambito")
+  setnames(at, 6, "tipo_servicio")
   
   # Se hace merge entre el archivo de transacciones y los de prestaciones
   
@@ -79,7 +87,7 @@ consolidar_rips <- function(prestadores = NULL, ac, af, ah, am, ap, at, au, us,
                          "nro_identificacion",
                          "valor", "cod_prestacion",
                          "nombre_prestacion",
-                         "ambito",
+                         "tipo_servicio",
                          "cantidad")
   
   merge_af_ac <- merge(af, ac[, columnas_merge_af, with = FALSE],
@@ -97,10 +105,6 @@ consolidar_rips <- function(prestadores = NULL, ac, af, ah, am, ap, at, au, us,
     merge_af_at,
     merge_af_am
   )
-  
-  # Conversión de ambito a valor correspondiente
-  
-  merge_af$ambito <- conversion_ambito(merge_af$ambito)
   
   # Encontrar duplicados y eliminar
   
@@ -223,6 +227,26 @@ consolidar_rips <- function(prestadores = NULL, ac, af, ah, am, ap, at, au, us,
   )
   
   merge_prestaciones$cod_prestacion[prestacion_numerica] <- cod_prestacion_num
+  
+  # Encontrar el ambito de la factura
+  
+  facturas_hospitalizacion <- ah[, list("ambito" = "Hospitalizacion"),
+                                 by = "nro_factura"]
+  
+  facturas_urgencias <- au[nro_factura %notin% 
+                             facturas_hospitalizacion$nro_factura,
+                           list("ambito" = "Urgencias"),
+                           by = "nro_factura"]
+  
+  facturas_ambito <- rbind(facturas_hospitalizacion, facturas_urgencias)
+  
+  merge_prestaciones <- merge.data.table(
+    x = merge_prestaciones,
+    y = facturas_ambito,
+    all.x = TRUE,
+    by = "nro_factura")
+  
+  merge_prestaciones[is.na(ambito), 'ambito' := "Ambulatorio"]
   
   # Merge codigo de prestación con indice de cups
 
