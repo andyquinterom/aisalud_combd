@@ -374,6 +374,8 @@ leer_rips_tabla <- function(folder_unzip, col_names, col_classes, prefix = "US",
     }
   )
   
+  print(names(tabla))
+  
   return(
     list(
       tabla = tabla,

@@ -150,6 +150,8 @@ prepara_server <- function(input, output, session, nombre_id) {
                     path = input$file$datapath,
                     session = session,
                     folder_unzip = folder_unzip)
+                  print(colnames(datos$rips$warnings))
+                  print(colnames(datos$rips$errores))
                   unlink(folder_unzip)
                 }
               )
