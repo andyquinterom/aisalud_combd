@@ -1,16 +1,23 @@
 consolidar_rips <- function(prestadores = NULL, ac, af, ah, am, ap, at, au, us,
                             cups = NULL) {
   
+  lista_archivos <- c(
+    ac = !is.null(ac),
+    ap = !is.null(ap),
+    at = !is.null(at),
+    am = !is.null(am)
+  )
+  
   # Los diferentes archivos se transforman a un objecto de tipo data.table
   # Se filtran para solo obtener datos de los prestadores seleccionados
   if (!is.null(prestadores)) {
-    ac <- copy(ac)[cod_prestador %in% prestadores]
-    af <- copy(af)[cod_prestador %in% prestadores]
-    ah <- copy(ah)[cod_prestador %in% prestadores]
-    am <- copy(am)[cod_prestador %in% prestadores]
-    ap <- copy(ap)[cod_prestador %in% prestadores]
-    at <- copy(at)[cod_prestador %in% prestadores]
-    au <- copy(au)[cod_prestador %in% prestadores]
+    ac <- no_null(copy(ac), FUN = function(x) x[cod_prestador %in% prestadores])
+    af <- no_null(copy(af), FUN = function(x) x[cod_prestador %in% prestadores])
+    ah <- no_null(copy(ah), FUN = function(x) x[cod_prestador %in% prestadores])
+    am <- no_null(copy(am), FUN = function(x) x[cod_prestador %in% prestadores])
+    ap <- no_null(copy(ap), FUN = function(x) x[cod_prestador %in% prestadores])
+    at <- no_null(copy(at), FUN = function(x) x[cod_prestador %in% prestadores])
+    au <- no_null(copy(au), FUN = function(x) x[cod_prestador %in% prestadores])
   } else {
     ac <- copy(ac)
     af <- copy(af)
@@ -21,27 +28,41 @@ consolidar_rips <- function(prestadores = NULL, ac, af, ah, am, ap, at, au, us,
     au <- copy(au)
   }
   
-  # Ambito de procedimientos se hace NULL
+ 
+  # Modificacion al archivo AP
+   
+  if (lista_archivos[["ap"]]) {
+    ap[, 'ambito' := NULL]
+    ap[, cantidad := 1]
+    ap[, nombre_prestacion := ""]
+    ap[, 'tipo_servicio' := "Procedimientos"]
+    setnames(ap, 7, "cod_prestacion")
+  }
   
-  ap[, 'ambito' := NULL]
+  # Modificacion al archivo AC
   
-  # El tipo de servicio de consultas siempre es ambulatorio
-  ac[, 'tipo_servicio' := "Consultas"]
+  if (lista_archivos[["ac"]]) {
+    ac[, 'tipo_servicio' := "Consultas"]
+    ac[, cantidad := 1]
+    ac[, nombre_prestacion := ""]
+    setnames(ac, 7, "cod_prestacion")
+  }
   
-  # El tipo de servicio de procedicimiento se hace procedimientos
+  # Modificacion al archivo AM
   
-  ap[, 'tipo_servicio' := "Procedimientos"]
+  if (lista_archivos[["am"]]) {
+    am[, 'tipo_servicio' := tipo_medicamento]
+    setnames(am, 6, "cod_prestacion")
+    setnames(am, 8, "nombre_prestacion")
+  }
   
-  # EL tipo de servicio de medicamentos sera su tipo
-  am[, 'tipo_servicio' := tipo_medicamento]
+  # Modificacion al archivo AT
   
-  # La cantidad de consultas y procedimientos siemore es 1
-  ac$cantidad <- 1
-  ap$cantidad <- 1
-  
-  # Consultas y procedimientos no incluyen nombre de prestación
-  ac$nombre_prestacion <- ""
-  ap$nombre_prestacion <- ""
+  if (lista_archivos[["at"]]) {
+    setnames(at, 7, "cod_prestacion")
+    setnames(at, 8, "nombre_prestacion")
+    setnames(at, 6, "tipo_servicio")
+  }
   
   # Se eliminan columnas innecesarias
   ah$tipo_identificacion <- NULL
@@ -71,16 +92,6 @@ consolidar_rips <- function(prestadores = NULL, ac, af, ah, am, ap, at, au, us,
     }
   )
   
-  # Se cambian nombres de columnas para merge
-  setnames(ac, 7, "cod_prestacion")
-  
-  setnames(ap, 7, "cod_prestacion")
-  setnames(at, 7, "cod_prestacion")
-  setnames(am, 6, "cod_prestacion")
-  setnames(at, 8, "nombre_prestacion")
-  setnames(am, 8, "nombre_prestacion")
-  setnames(at, 6, "tipo_servicio")
-  
   # Se hace merge entre el archivo de transacciones y los de prestaciones
   
   columnas_merge_af <- c("nro_factura",
@@ -90,21 +101,17 @@ consolidar_rips <- function(prestadores = NULL, ac, af, ah, am, ap, at, au, us,
                          "tipo_servicio",
                          "cantidad")
   
-  merge_af_ac <- merge(af, ac[, columnas_merge_af, with = FALSE],
-                       by = "nro_factura")
-  merge_af_ap <- merge(af, ap[, columnas_merge_af, with = FALSE],
-                       by = "nro_factura")
-  merge_af_at <- merge(af, at[, columnas_merge_af, with = FALSE],
-                       by = "nro_factura")
-  merge_af_am <- merge(af, am[, columnas_merge_af, with = FALSE],
-                       by = "nro_factura")
-  
-  merge_af <- rbind(
-    merge_af_ac,
-    merge_af_ap,
-    merge_af_at,
-    merge_af_am
+  lista_merge <- lapply(
+    X = list(ac, ap, at, am),
+    FUN = function(x) {
+      no_null(x, FUN = function(x) {
+        merge(af, x[, columnas_merge_af, with = FALSE],
+              by = "nro_factura")
+      })
+    }
   )
+  
+  merge_af <- rbindlist(lista_merge)
   
   # Encontrar duplicados y eliminar
   
@@ -294,4 +301,20 @@ mes_spanish <- function(x) {
     meses[x]
   )
   
+}
+
+
+no_null <- function(x, FUN, ...) {
+  if (!is.null(x)) {
+    x %>%
+      FUN(...)
+  } else {
+    NULL
+  }
+}
+
+simple_if <- function(condition, FUN, ...) {
+  if (condition) {
+    FUN(...)
+  }
 }
