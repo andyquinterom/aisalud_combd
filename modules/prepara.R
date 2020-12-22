@@ -21,7 +21,11 @@ prepara_ui <- function(id) {
       column(width = 6, actionButton(
         inputId = ns("file_load"), 
         label = "Aplicar", 
-        width = "100%"))
+        width = "100%")),
+      column(width = 12, 
+             tags$br(),
+             div(verbatimTextOutput(ns("logs")),
+                 class = "error_logs"))
     )
     )
 }
@@ -73,6 +77,10 @@ prepara_server <- function(input, output, session, nombre_id) {
     opciones_prepara$value_range <- input$value_range
     opciones_prepara$value_file <- input$value_file
     removeModal(session = session)
+  })
+  
+  output$logs <- renderText({
+    datos$rips[["warnings"]]
   })
   
   observeEvent(input$file_load, {
@@ -146,12 +154,15 @@ prepara_server <- function(input, output, session, nombre_id) {
                 expr = {
                   folder_unzip <- tempfile()
                   dir.create(path = folder_unzip)
-                  datos$rips <- un_zip_rips(
-                    path = input$file$datapath,
-                    session = session,
-                    folder_unzip = folder_unzip)
-                  print(colnames(datos$rips$warnings))
-                  print(colnames(datos$rips$errores))
+                  datos$rips <- withCallingHandlers(
+                    expr = un_zip_rips(
+                      path = input$file$datapath,
+                      session = session,
+                      folder_unzip = folder_unzip),
+                    message = function(m) output$logs <- renderPrint(m$message)
+                  )
+                  print("Warnings:")
+                  print(datos$rips[["warnings"]])
                   unlink(folder_unzip)
                 }
               )
@@ -161,11 +172,13 @@ prepara_server <- function(input, output, session, nombre_id) {
                   "nombre_prestador", "cod_prestador")] %>%
                 unique() %>%
                 t()
+              print(opciones_prepara$prestadores_unicos_lista)
               colnames(opciones_prepara$prestadores_unicos_lista) <- 
                 opciones_prepara$prestadores_unicos_lista[1,]
               opciones_prepara$prestadores_unicos <- 
                 opciones_prepara$prestadores_unicos_lista[-1,]
             }
+            print("Hola")
             showModal(
               session = session,
               ui = modalDialog(
@@ -188,7 +201,7 @@ prepara_server <- function(input, output, session, nombre_id) {
         }
       },
       error = function(e) {
-        print(e[1])
+        print(e)
         sendSweetAlert(
           session = session,
           title = "Error",
@@ -234,6 +247,7 @@ prepara_server <- function(input, output, session, nombre_id) {
       selected = "valor"
     )
   })
+  
   
   output$preview <- DT::renderDataTable({
     if (is.null(datos$colnames)) {

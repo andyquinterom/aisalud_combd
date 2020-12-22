@@ -12,9 +12,9 @@ borrar_tabla <- function(nombre, con, schema) {
 }
 
 feather_size_est <- function(obj, frac=1) {
-  tf <- tempfile()
-  on.exit(unlink(tf))
+  tf <- tempfile(tmpdir = tempdir(check =  TRUE))
   n <- ceiling(nrow(obj) * frac)
   write_feather(obj[seq_len(n),], path = tf)
   1/frac * file.info(tf)$size
+  unlink(tf)
 }

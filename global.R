@@ -17,9 +17,7 @@ library(batchtools)
 library(lubridate)
 library(parallel)
 library(shinycssloaders)
-# for (i in paste0("source/", list.files("source/"))) {
-#   source(i)
-# }
+unlink(".RData")
 
 for (i in paste0("modules/", list.files("modules/"))) {
   source(i)

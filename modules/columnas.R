@@ -64,11 +64,19 @@ columnas_server <- function(input, output, session, datos, nombre_id) {
   
   opciones_columnas <- reactiveValues()
   
+  data_colnames <- reactive({
+    data.frame("Columnas" = as.character(datos$colnames))
+  })
+  
+  observeEvent(data_colnames(), {
+    print(data_colnames)
+  })
+  
   observeEvent(datos$colnames, {
     if (!is.null(datos$colnames)) {
-      output$columnas <- DT::renderDataTable({
+      output$columnas <- DT::renderDataTable(server = FALSE, {
         datatable(
-          data = data.table("Columnas" = datos$colnames),
+          data = data_colnames(),
           rownames = FALSE,
           editable = TRUE,
           selection = "single",
@@ -104,24 +112,24 @@ columnas_server <- function(input, output, session, datos, nombre_id) {
     datos$colnames <- NULL
     datos$colnames <- names(datos$data_table)
   })
-  
+
   # Resumen de la columna seleccionada
-  
+
   actualizar_resumen <- reactive({
-    list(input$columnas_rows_selected, 
+    list(input$columnas_rows_selected,
          input$convertir_caracter_confirmar,
          input$convertir_numerico_confirmar,
          input$quitar_duplicados_confirmar,
          datos$filtros_aplicados,
          datos$colnames)
   })
-  
+
   output$resumen_columna <- renderText({
     if (!is.null(input$columnas_rows_selected)) {
       opciones_columnas$resumen
     }
   })
-  
+
   observeEvent(actualizar_resumen(), {
     if (!is.null(input$columnas_rows_selected)) {
       tryCatch(
@@ -133,119 +141,119 @@ columnas_server <- function(input, output, session, datos, nombre_id) {
       )
     }
   })
-  
+
   # Convertir a carácter
-  
+
   observeEvent(input$convertir_caracter, {
     if (!is.null(input$columnas_rows_selected)) {
       confirmSweetAlert(
         session = session,
         inputId = ns("convertir_caracter_confirmar"),
-        title = "Confirmar conversión", 
+        title = "Confirmar conversión",
         text = "Este cambio no es reversible.",
         btn_labels = c("Cancelar", "Confirmar")
       )
     }
   })
-  
+
   observeEvent(input$convertir_caracter_confirmar, {
-    if (input$convertir_caracter_confirmar && 
+    if (input$convertir_caracter_confirmar &&
         !is.null(input$columnas_rows_selected)) {
-      datos$data_original[, datos$colnames[input$columnas_rows_selected] := 
+      datos$data_original[, datos$colnames[input$columnas_rows_selected] :=
                          as.character(
                            get(datos$colnames[input$columnas_rows_selected]))]
       datos$data_table <- copy(datos$data_original)
     }
   })
-  
+
   # Convertir a numerico
-  
+
   observeEvent(input$convertir_numerico, {
     if (!is.null(input$columnas_rows_selected)) {
       confirmSweetAlert(
         session = session,
         inputId = ns("convertir_numerico_confirmar"),
-        title = "Confirmar conversión", 
+        title = "Confirmar conversión",
         text = "Este cambio no es reversible.",
         btn_labels = c("Cancelar", "Confirmar")
       )
     }
   })
-  
+
   observeEvent(input$convertir_numerico_confirmar, {
-    if (input$convertir_numerico_confirmar && 
+    if (input$convertir_numerico_confirmar &&
         !is.null(input$columnas_rows_selected)) {
-      datos$data_original[, datos$colnames[input$columnas_rows_selected] := 
+      datos$data_original[, datos$colnames[input$columnas_rows_selected] :=
                          as.numeric(as.character(
                            get(datos$colnames[input$columnas_rows_selected])))]
       datos$data_table <- copy(datos$data_original)
     }
   })
-  
+
   # Quitar duplicados
-  
+
   observeEvent(input$quitar_duplicados, {
     if (!is.null(input$columnas_rows_selected)) {
       confirmSweetAlert(
         session = session,
         inputId = ns("quitar_duplicados_confirmar"),
-        title = "Confirmar eliminación", 
+        title = "Confirmar eliminación",
         text = "Este cambio no es reversible.",
         btn_labels = c("Cancelar", "Confirmar")
       )
     }
   })
-  
+
   observeEvent(input$quitar_duplicados_confirmar, {
-    if (input$quitar_duplicados_confirmar && 
+    if (input$quitar_duplicados_confirmar &&
         !is.null(input$columnas_rows_selected)) {
       datos$data_table <- copy(datos$data_table)[
         !duplicated(get(datos$colnames[input$columnas_rows_selected]))
       ]
     }
   })
-  
+
   # Quitar NA
-  
+
   observeEvent(input$reemplazar_na, {
     if (!is.null(input$columnas_rows_selected)) {
       confirmSweetAlert(
         session = session,
         inputId = ns("reemplazar_na_confirmar"),
-        title = "Confirmar eliminación", 
+        title = "Confirmar eliminación",
         text = "Este cambio no es reversible.",
         btn_labels = c("Cancelar", "Confirmar")
       )
     }
   })
-  
+
   observeEvent(input$reemplazar_na_confirmar, {
-    if (input$reemplazar_na_confirmar && 
+    if (input$reemplazar_na_confirmar &&
         !is.null(input$columnas_rows_selected)) {
       datos$data_original[is.na(get(datos$colnames[input$columnas_rows_selected])),
                        datos$colnames[input$columnas_rows_selected] := "NULO"]
       datos$data_table <- copy(datos$data_original)
     }
   })
-  
+
   # Remover columnas
-  
+
   observeEvent(input$remover, {
     if (!is.null(input$columnas_rows_selected)) {
       confirmSweetAlert(
         session = session,
         inputId = ns("remover_confirmar"),
-        title = "Remover columna", 
+        title = "Remover columna",
         text = "¿Seguro que desea remover la columna seleccionada?",
         btn_labels = c("Cancelar", "Confirmar")
       )
     }
   })
-  
+
   observeEvent(input$remover_confirmar, {
-    if (input$remover_confirmar && 
+    if (input$remover_confirmar &&
         !is.null(input$columnas_rows_selected)) {
-      datos$data_original[, datos$colnames[input$columnas_rows_selected] := 
+      datos$data_original[, datos$colnames[input$columnas_rows_selected] :=
                          NULL]
       datos$data_table <- copy(datos$data_original)
       datos$colnames <- NULL

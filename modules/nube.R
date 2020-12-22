@@ -210,7 +210,7 @@ nube_server <- function(input, output, session, datos, nombre_id) {
     }
   })
   
-  output$tablas_lista <- DT::renderDataTable({
+  output$tablas_lista <- DT::renderDataTable(server = FALSE, {
     datatable(
       data = data.frame("Tablas" = opciones_nube$tablas_almacenadas),
       rownames = FALSE,
