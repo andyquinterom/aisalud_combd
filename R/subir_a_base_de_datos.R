@@ -1,7 +1,7 @@
 subir_a_base_de_datos <- function(nombre, datos, con, schema) {
-  dbWriteTable(conn = con,
+  dbWriteTable(conn = con, 
                Id(schema = schema, table = nombre),
-               datos)
+               value = datos)
 }
 
 borrar_tabla <- function(nombre, con, schema) {
@@ -18,3 +18,16 @@ feather_size_est <- function(obj, frac=1) {
   1/frac * file.info(tf)$size
   unlink(tf)
 }
+
+set_utf8 <- function(x) {
+  # Declare UTF-8 encoding on all character columns:
+  chr <- sapply(x, is.character)
+  x[, chr] <- lapply(x[, chr, drop = FALSE], function(z) {
+    print(Encoding(z))
+    return(stri_encode(z, "", "UTF-8"))
+  })
+  # Same on column names:
+  # Encoding(names(x)) <- "UTF-8"
+  x
+}
+

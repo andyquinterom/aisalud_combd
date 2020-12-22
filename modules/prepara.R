@@ -178,7 +178,6 @@ prepara_server <- function(input, output, session, nombre_id) {
               opciones_prepara$prestadores_unicos <- 
                 opciones_prepara$prestadores_unicos_lista[-1,]
             }
-            print("Hola")
             showModal(
               session = session,
               ui = modalDialog(

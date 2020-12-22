@@ -46,3 +46,9 @@ dbSendQuery(
   str_replace_all("SET search_path = public, ######;",
                   "######", Sys.getenv("DATABASE_SCHEMA"))
 )
+
+print(dbGetQuery(
+  base_de_datos_con,
+  "SHOW client_encoding;"
+))
+

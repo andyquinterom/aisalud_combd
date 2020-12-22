@@ -306,17 +306,19 @@ leer_rips_tabla <- function(folder_unzip, col_classes, prefix = "US",
       if(prefix %in% substr(
         list.files(path = paste0(folder_unzip, "/", i)), 1, 2)) {
         file_pos <- which(substr(
-          list.files(path = paste0(folder_unzip, "/", i)), 1, 2) == prefix)
+          list.files(path = paste0(folder_unzip, "/", i)), 1, 2) == prefix)[1]
         if (!identical(file_pos, integer(0))) {
           tryCatch(
             expr = {
-                list.files(path = paste0(folder_unzip, "/", i))[file_pos]
+              file <- paste0(
+                folder_unzip, "/", i, "/", 
+                list.files(
+                  path = paste0(folder_unzip, "/", i))[file_pos])
                   tabla <<- rbind(
                     tabla,
                     read_delim(
-                      file = paste0(
-                        folder_unzip, "/", i, "/", 
-                        list.files(path = paste0(folder_unzip, "/", i))[file_pos]),
+                      locale = locale(encoding = guess_encoding(file)[[1]][1]),
+                      file = file,
                       delim = ",",
                       col_types = col_classes,
                       col_names = names(col_classes[["cols"]])
@@ -324,13 +326,18 @@ leer_rips_tabla <- function(folder_unzip, col_classes, prefix = "US",
                   )
             },
             warning = function(w) {
-              print(list.files(path = paste0(folder_unzip, "/", i))[file_pos])
+              file <- paste0(
+                folder_unzip, "/", i, "/", 
+                list.files(
+                  path = paste0(folder_unzip, "/", i))[file_pos])
               tabla <<- rbind(
                 tabla,
                 read_delim(
+                  locale = locale(encoding = guess_encoding(file)[[1]][1]),
                   file = paste0(
                     folder_unzip, "/", i, "/", 
-                    list.files(path = paste0(folder_unzip, "/", i))[file_pos]),
+                    list.files(
+                      path = paste0(folder_unzip, "/", i))[file_pos]),
                   delim = ",",
                   col_types = col_classes,
                   col_names = names(col_classes[["cols"]])
