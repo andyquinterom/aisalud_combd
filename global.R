@@ -17,9 +17,7 @@ library(batchtools)
 library(lubridate)
 library(parallel)
 library(shinycssloaders)
-# for (i in paste0("source/", list.files("source/"))) {
-#   source(i)
-# }
+unlink(".RData")
 
 for (i in paste0("modules/", list.files("modules/"))) {
   source(i)
@@ -48,3 +46,9 @@ dbSendQuery(
   str_replace_all("SET search_path = public, ######;",
                   "######", Sys.getenv("DATABASE_SCHEMA"))
 )
+
+print(dbGetQuery(
+  base_de_datos_con,
+  "SHOW client_encoding;"
+))
+

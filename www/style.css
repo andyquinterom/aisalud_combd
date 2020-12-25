@@ -78,3 +78,8 @@ a {
   background-color: white !important;
   border-radius: 0 !important;
 }
+
+.error_logs pre {
+  max-height: 600px;
+  overflow: scroll;
+}

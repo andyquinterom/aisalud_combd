@@ -1,256 +1,206 @@
 un_zip_rips <- function(path, folder_unzip, session) {
   # Colnames para US -------------------------
   
-  col_names_us <- c(
-    "tipo_identificacion",
-    "nro_identificacion",
-    "cod_eapb",
-    "tipo_usuario",
-    "primer_apellido",
-    "segundo_apellido",
-    "primer_nombre",
-    "segundo_nombre",
-    "edad",
-    "unidad_edad",
-    "sexo",
-    "codigo_departamento",
-    "codigo_municipio",
-    "zone_residencial"
-  )
-  
-  col_classes_us <- list(
-    character = c(1:8, 10:14),
-    numeric = c(9)
+  cols_us <- cols(
+    "tipo_identificacion" = col_character(),
+    "nro_identificacion" = col_character(),
+    "cod_eapb" = col_character(),
+    "tipo_usuario" = col_character(),
+    "primer_apellido" = col_character(),
+    "segundo_apellido" = col_character(),
+    "primer_nombre" = col_character(),
+    "segundo_nombre" = col_character(),
+    "edad" = col_character(),
+    "unidad_edad" = col_character(),
+    "sexo" = col_character(),
+    "codigo_departamento" = col_character(),
+    "codigo_municipio" = col_character(),
+    "zone_residencial"  = col_character()
   )
   
   # Colnames para AF -------------------------
   
-  col_names_af <- c(
-    "cod_prestador",
-    "nombre_prestador",
-    "tipo_identificacion_prestador",
-    "nro_identificacion_prestador",
-    "nro_factura",
-    "fecha_prestacion",
-    "fecha_inicio",
-    "fecha_final",
-    "codigo_eapb",
-    "nombre_eapb",
-    "nro_contrato",
-    "plan_beneficios",
-    "nro_poliza",
-    "valor_copago",
-    "valor_comision",
-    "valor_descuentos",
-    "valor_factura"
-  )
-  
-  col_classes_af <- list(
-    character = c(1:13),
-    numeric = c(14:17)
+  cols_af <- cols(
+    "cod_prestador" = col_character(),
+    "nombre_prestador" = col_character(),
+    "tipo_identificacion_prestador" = col_character(),
+    "nro_identificacion_prestador" = col_character(),
+    "nro_factura" = col_character(),
+    "fecha_prestacion" = col_character(),
+    "fecha_inicio" = col_character(),
+    "fecha_final" = col_character(),
+    "codigo_eapb" = col_character(),
+    "nombre_eapb" = col_character(),
+    "nro_contrato" = col_character(),
+    "plan_beneficios" = col_character(),
+    "nro_poliza" = col_character(),
+    "valor_copago" = col_character(),
+    "valor_comision" = col_character(),
+    "valor_descuentos" = col_character(),
+    "valor_factura"  = col_character()
   )
   
   # Colnames para AC -------------------------
   
-  col_names_ac <- c(
-    "nro_factura",
-    "cod_prestador",
-    "tipo_identificacion",
-    "nro_identificacion",
-    "fecha_prestacion",
-    "nro_autorizacion",
-    "cod_consulta",
-    "finalidad_consulta",
-    "causa_externa",
-    "cod_dx_ppal",
-    "cod_dx_1",
-    "cod_dx_2",
-    "cod_dx_3",
-    "dx_tipo",
-    "valor_consulta",
-    "valor_cuota",
-    "valor"
-  )
-  
-  col_classes_ac <- list(
-    character = c(1:14),
-    numeric = c(15:17)
+  cols_ac <- cols(
+    "nro_factura" = col_character(),
+    "cod_prestador" = col_character(),
+    "tipo_identificacion" = col_character(),
+    "nro_identificacion" = col_character(),
+    "fecha_prestacion" = col_character(),
+    "nro_autorizacion" = col_character(),
+    "cod_consulta" = col_character(),
+    "finalidad_consulta" = col_character(),
+    "causa_externa" = col_character(),
+    "cod_dx_ppal" = col_character(),
+    "cod_dx_1" = col_character(),
+    "cod_dx_2" = col_character(),
+    "cod_dx_3" = col_character(),
+    "dx_tipo" = col_character(),
+    "valor_consulta" = col_character(),
+    "valor_cuota" = col_character(),
+    "valor" = col_character()
   )
   
   # Colnames para AP -------------------------
   
-  col_names_ap <- c(
-    "nro_factura",
-    "cod_prestador",
-    "tipo_identificacion",
-    "nro_identificacion",
-    "fecha_prestacion",
-    "nro_autorizacion",
-    "cod_cups",
-    "ambito",
-    "finalidad",
-    "personal",
-    "cod_dx_ppal",
-    "cod_dx_rel",
-    "cod_complicacion",
-    "realizacion_quir",
-    "valor"
-  )
-  
-  col_classes_ap <- list(
-    character = c(1:14),
-    numeric = c(15)
+  cols_ap <- cols(
+    "nro_factura" = col_character(),
+    "cod_prestador" = col_character(),
+    "tipo_identificacion" = col_character(),
+    "nro_identificacion" = col_character(),
+    "fecha_prestacion" = col_character(),
+    "nro_autorizacion" = col_character(),
+    "cod_cups" = col_character(),
+    "ambito" = col_character(),
+    "finalidad" = col_character(),
+    "personal" = col_character(),
+    "cod_dx_ppal" = col_character(),
+    "cod_dx_rel" = col_character(),
+    "cod_complicacion" = col_character(),
+    "realizacion_quir" = col_character(),
+    "valor" = col_character()
   )
   
   # Colnames para AU -------------------------
   
-  col_names_au <- c(
-    "nro_factura",
-    "cod_prestador",
-    "tipo_identificacion",
-    "nro_identificacion",
-    "fecha_prestacion",
-    "hora_prestacion",
-    "nro_autorizacion",
-    "causa_externa",
-    "cod_dx_egreso",
-    "cod_dx_rel_1",
-    "cod_dx_rel_2",
-    "cod_dx_rel_3",
-    "destino",
-    "estado_egreso",
-    "causa_muerte",
-    "fecha_egreso",
-    "hora_egreso"
-  )
-  
-  col_classes_au <- list(
-    character = c(1:17)
+  cols_au <- cols(
+    "nro_factura" = col_character(),
+    "cod_prestador" = col_character(),
+    "tipo_identificacion" = col_character(),
+    "nro_identificacion" = col_character(),
+    "fecha_prestacion" = col_character(),
+    "hora_prestacion" = col_character(),
+    "nro_autorizacion" = col_character(),
+    "causa_externa" = col_character(),
+    "cod_dx_egreso" = col_character(),
+    "cod_dx_rel_1" = col_character(),
+    "cod_dx_rel_2" = col_character(),
+    "cod_dx_rel_3" = col_character(),
+    "destino" = col_character(),
+    "estado_egreso" = col_character(),
+    "causa_muerte" = col_character(),
+    "fecha_egreso" = col_character(),
+    "hora_egreso"  = col_character()
   )
   
   # Colnames para AH -------------------------
   
-  col_names_ah <- c(
-    "nro_factura",
-    "cod_prestador",
-    "tipo_identificacion",
-    "nro_identificacion",
-    "via_ingreso",
-    "fecha_prestacion",
-    "hora_prestacion",
-    "nro_autorizacion",
-    "causa_externa",
-    "cod_dx_ppal",
-    "cod_dx_egreso",
-    "cod_dx_rel_1",
-    "cod_dx_rel_2",
-    "cod_dx_rel_3",
-    "cod_complicacion",
-    "estado_salida",
-    "causa_muerte",
-    "fecha_egreso",
-    "hora_egreso"
-  )
-  
-  col_classes_ah <- list(
-    character = c(1:19)
+  cols_ah <- cols(
+    "nro_factura" = col_character(),
+    "cod_prestador" = col_character(),
+    "tipo_identificacion" = col_character(),
+    "nro_identificacion" = col_character(),
+    "via_ingreso" = col_character(),
+    "fecha_prestacion" = col_character(),
+    "hora_prestacion" = col_character(),
+    "nro_autorizacion" = col_character(),
+    "causa_externa" = col_character(),
+    "cod_dx_ppal" = col_character(),
+    "cod_dx_egreso" = col_character(),
+    "cod_dx_rel_1" = col_character(),
+    "cod_dx_rel_2" = col_character(),
+    "cod_dx_rel_3" = col_character(),
+    "cod_complicacion" = col_character(),
+    "estado_salida" = col_character(),
+    "causa_muerte" = col_character(),
+    "fecha_egreso" = col_character(),
+    "hora_egreso" = col_character()
   )
   
   # Colnames para AN -------------------------
   
-  col_names_an <- c(
-    "nro_factura",
-    "cod_prestador",
-    "tipo_identificacion",
-    "nro_identificacion",
-    "fecha_prestacion",
-    "hora_nacimiento",
-    "edad",
-    "control_prenatal",
-    "sexo",
-    "peso",
-    "cod_dx_ppal",
-    "causa_muerte",
-    "fecha_muerte",
-    "hora_muerte"
-  )
-  
-  col_classes_an <- list(
-    character = c(1:14)
+  cols_an <- cols(
+    "nro_factura" = col_character(),
+    "cod_prestador" = col_character(),
+    "tipo_identificacion" = col_character(),
+    "nro_identificacion" = col_character(),
+    "fecha_prestacion" = col_character(),
+    "hora_nacimiento" = col_character(),
+    "edad" = col_character(),
+    "control_prenatal" = col_character(),
+    "sexo" = col_character(),
+    "peso" = col_character(),
+    "cod_dx_ppal" = col_character(),
+    "causa_muerte" = col_character(),
+    "fecha_muerte" = col_character(),
+    "hora_muerte" = col_character()
   )
   
   # Colnames para AM -------------------------
   
-  col_names_am <- c(
-    "nro_factura",
-    "cod_prestador",
-    "tipo_identificacion",
-    "nro_identificacion",
-    "nro_autorizacion",
-    "cums",
-    "tipo_medicamento",
-    "nombre_medicamento",
-    "forma_farmaceutica",
-    "concentracion_medicamento",
-    "unidad_medida",
-    "cantidad",
-    "valor_unitario",
-    "valor"
+  cols_am <- cols(
+    "nro_factura" = col_character(),
+    "cod_prestador" = col_character(),
+    "tipo_identificacion" = col_character(),
+    "nro_identificacion" = col_character(),
+    "nro_autorizacion" = col_character(),
+    "cums" = col_character(),
+    "tipo_medicamento" = col_character(),
+    "nombre_medicamento" = col_character(),
+    "forma_farmaceutica" = col_character(),
+    "concentracion_medicamento" = col_character(),
+    "unidad_medida" = col_character(),
+    "cantidad" = col_character(),
+    "valor_unitario" = col_character(),
+    "valor" = col_character()
   )
   
-  col_classes_am <- list(
-    character = c(1:12),
-    numeric = c(13:14)
-  )
-  
+
   # Colnames para AT -------------------------
   
-  col_names_at <- c(
-    "nro_factura",
-    "cod_prestador",
-    "tipo_identificacion",
-    "nro_identificacion",
-    "nro_autorizacion",
-    "tipo_servicio",
-    "codigo_servicio",
-    "nombre_servicio",
-    "cantidad",
-    "valor_unitario",
-    "valor"
-  )
-  
-  col_classes_at <- list(
-    character = c(1:9),
-    numeric = c(10:11)
+  cols_at <- cols(
+    "nro_factura" = col_character(), 
+    "cod_prestador" = col_character(),
+    "tipo_identificacion" = col_character(),
+    "nro_identificacion" = col_character(),
+    "nro_autorizacion" = col_character(),
+    "tipo_servicio" = col_character(),
+    "codigo_servicio" = col_character(),
+    "nombre_servicio" = col_character(),
+    "cantidad" = col_character(),
+    "valor_unitario" = col_character(),
+    "valor" = col_character()
   )
   
   datos_en_lista <- list(
-    "us" = list("colnames" = col_names_us, 
-                "col_classes" = col_classes_us,
+    "us" = list("colnames" = cols_us, 
                 "prefix" = "US"),
-    "af" = list("colnames" = col_names_af, 
-                "col_classes" = col_classes_af,
+    "af" = list("colnames" = cols_af, 
                 "prefix" = "AF"),
-    "ac" = list("colnames" = col_names_ac, 
-                "col_classes" = col_classes_ac,
+    "ac" = list("colnames" = cols_ac, 
                 "prefix" = "AC"),
-    "ap" = list("colnames" = col_names_ap, 
-                "col_classes" = col_classes_ap,
+    "ap" = list("colnames" = cols_ap, 
                 "prefix" = "AP"),
-    "au" = list("colnames" = col_names_au, 
-                "col_classes" = col_classes_au,
+    "au" = list("colnames" = cols_au, 
                 "prefix" = "AU"),
-    "ah" = list("colnames" = col_names_ah, 
-                "col_classes" = col_classes_ah,
+    "ah" = list("colnames" = cols_ah, 
                 "prefix" = "AH"),
-    "an" = list("colnames" = col_names_an, 
-                "col_classes" = col_classes_an,
+    "an" = list("colnames" = cols_an, 
                 "prefix" = "AN"),
-    "am" = list("colnames" = col_names_am, 
-                "col_classes" = col_classes_am,
+    "am" = list("colnames" = cols_am, 
                 "prefix" = "AM"),
-    "at" = list("colnames" = col_names_at, 
-                "col_classes" = col_classes_at,
+    "at" = list("colnames" = cols_at, 
                 "prefix" = "AT")
   )
   
@@ -258,19 +208,46 @@ un_zip_rips <- function(path, folder_unzip, session) {
   
   unzip(path, exdir = folder_unzip)
   
-  datos <- mclapply(
+  datos <- lapply(
     X = datos_en_lista,
-    mc.cores = parallel::detectCores(),
     folder_unzip = folder_unzip,
     FUN = function(x, folder_unzip) {
       leer_rips_tabla(
         folder_unzip = folder_unzip,
-        col_names = x$colnames,
-        col_classes = x$col_classes,
+        col_classes = x$colnames,
         prefix = x$prefix,
         session = NULL
       )
     }
+  )
+  
+  datos$warnings <- c(
+    datos$us$warnings,
+    datos$af$warnings,
+    datos$ac$warnings,
+    datos$ap$warnings,
+    datos$au$warnings,
+    datos$ah$warnings,
+    datos$am$warnings,
+    datos$an$warnings,
+    datos$at$warnings
+  )
+  datos$warnings <- c(
+    datos$warnings,
+    datos$us$errores,
+    datos$af$errores,
+    datos$ac$errores,
+    datos$ap$errores,
+    datos$au$errores,
+    datos$ah$errores,
+    datos$am$errores,
+    datos$an$errores,
+    datos$at$errores
+  )
+  
+  datos$warnings <- paste(
+    datos$warnings,
+    collapse = "\n"
   )
   
   return(
@@ -311,7 +288,7 @@ leer_rips_todos <- function(datos, prestadores, cups, session = NULL) {
   
 }
 
-leer_rips_tabla <- function(folder_unzip, col_names, col_classes, prefix = "US",
+leer_rips_tabla <- function(folder_unzip, col_classes, prefix = "US",
                             session = NULL) {
   folders <- list.files(path = folder_unzip)
   
@@ -329,56 +306,76 @@ leer_rips_tabla <- function(folder_unzip, col_names, col_classes, prefix = "US",
       if(prefix %in% substr(
         list.files(path = paste0(folder_unzip, "/", i)), 1, 2)) {
         file_pos <- which(substr(
-          list.files(path = paste0(folder_unzip, "/", i)), 1, 2) == prefix)
-        tryCatch(
-          expr = {
-            tabla <<- rbind(
-              tabla,
-              fread(
-                file = paste0(
-                  folder_unzip, "/", i, "/", 
-                  list.files(path = paste0(folder_unzip, "/", i))[file_pos]),
-                col.names = col_names,
-                colClasses = col_classes
+          list.files(path = paste0(folder_unzip, "/", i)), 1, 2) == prefix)[1]
+        if (!identical(file_pos, integer(0))) {
+          tryCatch(
+            expr = {
+              file <- paste0(
+                folder_unzip, "/", i, "/", 
+                list.files(
+                  path = paste0(folder_unzip, "/", i))[file_pos])
+                  tabla <<- rbind(
+                    tabla,
+                    read_delim(
+                      locale = locale(encoding = guess_encoding(file)[[1]][1]),
+                      file = file,
+                      delim = ",",
+                      col_types = col_classes,
+                      col_names = names(col_classes[["cols"]])
+                    )
+                  )
+            },
+            warning = function(w) {
+              file <- paste0(
+                folder_unzip, "/", i, "/", 
+                list.files(
+                  path = paste0(folder_unzip, "/", i))[file_pos])
+              tabla <<- rbind(
+                tabla,
+                read_delim(
+                  locale = locale(encoding = guess_encoding(file)[[1]][1]),
+                  file = paste0(
+                    folder_unzip, "/", i, "/", 
+                    list.files(
+                      path = paste0(folder_unzip, "/", i))[file_pos]),
+                  delim = ",",
+                  col_types = col_classes,
+                  col_names = names(col_classes[["cols"]])
+                )
               )
-            )
-          },
-          warning = function(w) {
-            warning_count <<- c(warning_count, i)
-            tabla <<- rbind(
-              tabla,
-              fread(
-                file = paste0(
-                  folder_unzip, "/", i, "/", 
-                  list.files(path = paste0(folder_unzip, "/", i))[file_pos]),
-                col.names = col_names,
-                colClasses = col_classes
-              )
-            )
-          },
-          error = function(e) {
-            error_count <<- c(error_count, i)
-            print(e)
-          }
-        )
+              warning <- NULL
+              warning <- str_replace_all(pattern = "\n", replacement = "AAAAA",
+                                         string = w$message)
+              warning <- str_replace_all(pattern = folder_unzip, replacement = "",
+                                         string = warning)
+              warning <- gsub("\\s+", " ", warning)
+              warning <- str_replace_all(pattern = "AAAAA", replacement = "\n",
+                                         string = warning)
+              warning_count <<- c(
+                warning,
+                warning_count)
+            },
+            error = function(e) {
+              error_count <<- c(error_count, i)
+            }
+          )
+        }
         
-        leyendo_archivo_progress(
-          session = session,
-          i = i,
-          folder_num = folder_num, 
-          folders_total = folders_total,
-          prefix = prefix)
+        # leyendo_archivo_progress(
+        #   session = session,
+        #   i = i,
+        #   folder_num = folder_num, 
+        #   folders_total = folders_total,
+        #   prefix = prefix)
         
         folder_num <<- folder_num + 1
       }
     }
   )
   
-  print(names(tabla))
-  
   return(
     list(
-      tabla = tabla,
+      tabla = as.data.table(tabla),
       warnings = warning_count,
       errores = error_count
     )
