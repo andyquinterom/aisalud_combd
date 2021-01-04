@@ -50,15 +50,16 @@ columnas_ui <- function(id) {
                 width = "100%",
                 "Remover"
               ))
-          ))
-          
+          )),
+          uiOutput(ns("muestreo"))
         )
       )
     )
   )
 }
 
-columnas_server <- function(input, output, session, datos, nombre_id) {
+columnas_server <- function(input, output, session, datos, nombre_id, 
+                            muestreo = FALSE) {
   
   ns <- NS(nombre_id)
   
@@ -121,7 +122,8 @@ columnas_server <- function(input, output, session, datos, nombre_id) {
          input$convertir_numerico_confirmar,
          input$quitar_duplicados_confirmar,
          datos$filtros_aplicados,
-         datos$colnames)
+         datos$colnames,
+         datos$actualizar_resumen)
   })
 
   output$resumen_columna <- renderText({
@@ -163,6 +165,9 @@ columnas_server <- function(input, output, session, datos, nombre_id) {
                          as.character(
                            get(datos$colnames[input$columnas_rows_selected]))]
       datos$data_table <- copy(datos$data_original)
+      datos$actualizar_resumen <- NULL
+      datos$actualizar_resumen <- TRUE
+      finalizado()
     }
   })
 
@@ -187,6 +192,9 @@ columnas_server <- function(input, output, session, datos, nombre_id) {
                          as.numeric(as.character(
                            get(datos$colnames[input$columnas_rows_selected])))]
       datos$data_table <- copy(datos$data_original)
+      datos$actualizar_resumen <- NULL
+      datos$actualizar_resumen <- TRUE
+      finalizado()
     }
   })
 
@@ -210,7 +218,73 @@ columnas_server <- function(input, output, session, datos, nombre_id) {
       datos$data_table <- copy(datos$data_table)[
         !duplicated(get(datos$colnames[input$columnas_rows_selected]))
       ]
+      datos$actualizar_resumen <- NULL
+      datos$actualizar_resumen <- TRUE
+      finalizado()
     }
+  })
+  
+   # Opcion de muestreo
+  
+  output$muestreo <- renderUI({
+    if (muestreo) {
+      tagList(
+        tags$br(),
+        fluidRow(
+          div(class = "botones_convertir_fila_2",
+              column(width = 12, actionButton(
+                inputId = ns("muestreo"),
+                width = "100%",
+                "Muestreo"
+              ))
+          ))
+      )
+    }
+  })
+  
+  observeEvent(input$muestreo, {
+    n_unicos <- uniqueN(
+      x = datos$data_original[[datos$colnames[input$columnas_rows_selected]]])
+    showModal(
+      session = session,
+      ui = modalDialog(
+        title = "Muestreo",
+        easyClose = TRUE,
+        fade = TRUE,
+        tags$p("Esta opción ayuda a generar muestreos aleatorios de los datos."),
+        tags$p("Esta funcionalidad no es reversible."),
+        numericInput(inputId = ns("seed"), label = "Semilla", value = 100),
+        numericInput(inputId = ns("n_values"), 
+                     label = "Valor únicos",
+                     value = round(n_unicos/5),
+                     max = n_unicos,
+                     min = 1),
+        footer = actionButton(
+          inputId = ns("muestreo_confirmar"),
+          label = "Ejecutar muestreo")
+      )
+    )
+  })
+  
+  observeEvent(input$muestreo_confirmar, {
+    set.seed(100)
+    muestreo_datos <- sample(
+      x = {
+        datos$data_original[[datos$colnames[input$columnas_rows_selected]]] %>%
+          unique()
+      },
+      size = input$n_values,
+      replace = FALSE)
+    
+    datos$data_original <- 
+      datos$data_original[get(datos$colnames[input$columnas_rows_selected])
+                          %in% muestreo_datos,]
+    
+    datos$data_table <- copy(datos$data_original)
+    datos$actualizar_resumen <- NULL
+    datos$actualizar_resumen <- TRUE
+    finalizado()
+    
   })
 
   # Quitar NA
@@ -233,6 +307,9 @@ columnas_server <- function(input, output, session, datos, nombre_id) {
       datos$data_original[is.na(get(datos$colnames[input$columnas_rows_selected])),
                        datos$colnames[input$columnas_rows_selected] := "NULO"]
       datos$data_table <- copy(datos$data_original)
+      datos$actualizar_resumen <- NULL
+      datos$actualizar_resumen <- TRUE
+      finalizado()
     }
   })
 
@@ -261,7 +338,17 @@ columnas_server <- function(input, output, session, datos, nombre_id) {
       columnas_num <- unlist(lapply(datos$data_table[1,], is.numeric))
       datos$colnames_num <- NULL
       datos$colnames_num <- datos$colnames[columnas_num]
+      datos$actualizar_resumen <- NULL
+      datos$actualizar_resumen <- TRUE
+      finalizado()
     }
+  })
+  
+  finalizado <- reactive({
+    showNotification(
+      session = session,
+      "Proceso finalizado. Por favor re-aplicar filtros."
+    )
   })
   
 }

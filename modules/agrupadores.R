@@ -85,6 +85,10 @@ agrupadores_server <- function(input, output, session, datos, agrupadores) {
         datos$colnames_num <- NULL
         columnas_num <- unlist(lapply(datos$data_table[1,], is.numeric))
         datos$colnames_num <- datos$colnames[columnas_num]
+        showNotification(
+          ui = "Agrupación finalizada.",
+          session = session
+        )
       },
       error = function(e) {
         print(e)
