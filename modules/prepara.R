@@ -12,7 +12,7 @@ prepara_ui <- function(id) {
       inputId = ns("file_type"),
       label = "Tipo de archivo",
       inline = TRUE, 
-      choices = c("feather", "csv", "datos didacticos", "RIPS")),
+      choices = c("csv", "feather", "datos didacticos", "RIPS")),
     fluidRow(
       column(width = 6, actionButton(
         inputId = ns("file_options_open"),

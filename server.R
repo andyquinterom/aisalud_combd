@@ -24,7 +24,8 @@ shinyServer(function(input, output, session) {
     module = columnas_server,
     id = "convertir_columnas",
     datos = datos,
-    nombre_id = "convertir_columnas"
+    nombre_id = "convertir_columnas",
+    muestreo = TRUE
   )
   
   callModule(
