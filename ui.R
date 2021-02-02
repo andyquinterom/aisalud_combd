@@ -45,6 +45,11 @@ shinyUI(function(request) {tagList(
                      column(width = 12,
                             filtros_ui("filtros")
                             )
+                   )),
+          tabPanel(title = "Otras funciones",
+                   fluidRow(
+                     column(width = 12,
+                            otras_funciones_ui("otras_funciones"))
                    ))
         )
       )

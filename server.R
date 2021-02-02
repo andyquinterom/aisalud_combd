@@ -69,4 +69,6 @@ shinyServer(function(input, output, session) {
     datos = datos
   )
   
+  otras_funciones_server("otras_funciones", datos)
+  
 })

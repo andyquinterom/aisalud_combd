@@ -63,21 +63,18 @@ columnas_server <- function(input, output, session, datos, nombre_id,
   
   ns <- NS(nombre_id)
   
-  opciones_columnas <- reactiveValues()
+  opciones_columnas <- reactiveValues(tabla = data.frame())
   
-  data_colnames <- reactive({
-    data.frame("Columnas" = as.character(datos$colnames))
-  })
-  
-  observeEvent(data_colnames(), {
-    print(data_colnames)
+  data_colnames <- observe({
+    opciones_columnas$tabla <- 
+      data.frame("Columnas" = as.character(datos$colnames))
   })
   
   observeEvent(datos$colnames, {
     if (!is.null(datos$colnames)) {
       output$columnas <- DT::renderDataTable(server = FALSE, {
         datatable(
-          data = data_colnames(),
+          data = opciones_columnas$tabla,
           rownames = FALSE,
           editable = TRUE,
           selection = "single",
@@ -123,7 +120,8 @@ columnas_server <- function(input, output, session, datos, nombre_id,
          input$quitar_duplicados_confirmar,
          datos$filtros_aplicados,
          datos$colnames,
-         datos$actualizar_resumen)
+         datos$actualizar_resumen,
+         datos$data_table)
   })
 
   output$resumen_columna <- renderText({
