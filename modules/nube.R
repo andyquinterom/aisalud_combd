@@ -4,10 +4,6 @@ nube_ui <- function(id) {
   tagList(
     fluidRow(
       tags$br(),
-      actionButton(
-        inputId = ns("conectar_al_servicio"),
-        label = "Concetar con la el servicio",
-        width = "100%"),
       shinyWidgets::progressBar(
         id = ns("almacenamiento_percent"),
         value = 100, 
@@ -58,58 +54,9 @@ nube_server <- function(input, output, session, datos, nombre_id) {
     }
   })
   
-  observeEvent(input$conectar_al_servicio, {
-    if (is.null(base_de_datos_con)) {
-      tryCatch(
-        expr = {
-          opciones_nube$tablas_almacenadas <- dbGetQuery(
-            base_de_datos_con,
-            paste0("SELECT table_name FROM information_schema.tables
-                   WHERE table_schema='",
-                   Sys.getenv("DATABASE_SCHEMA"), "'")) %>%
-            unlist() %>%
-            unname()
-          
-          opciones_nube$almacenamiento <- check_schema_size(
-            con = base_de_datos_con,
-            schema = Sys.getenv("DATABASE_SCHEMA")
-          ) %>% ifelse(is.na(.),
-                       yes = 0,
-                       no = .)
-          
-          opciones_nube$almacenamiento_total <- 
-            Sys.getenv("DATABASE_MAX_STORAGE") %>%
-            as.numeric()
-          
-          opciones_nube$tablas_almacenadas <- dbGetQuery(
-            base_de_datos_con,
-            paste0("SELECT table_name FROM information_schema.tables
-                   WHERE table_schema='", 
-                   Sys.getenv("DATABASE_SCHEMA"), "'")) %>%
-            unlist() %>%
-            unname()  
-          
-          
-        },
-        error = function(e) {
-          base_de_datos_con <<- NULL
-          opciones_nube$almacenamiento_total <- NULL
-          print(e)
-          showNotification(
-            ui = "Error subiendo la base de datos.",
-            type = "error",
-            session = session
-          )
-        } 
-      )
-    }
-  })
-  
   observeEvent(input$subir_tabla, {
     if (!is.null(datos$colnames)) {
       table_size <- round(feather_size_est(datos$data_table) / 1048576)
-      print(table_size)
-      print(table_size + opciones_nube$almacenamiento)
       if (table_size + opciones_nube$almacenamiento <
           opciones_nube$almacenamiento_total) {
         showModal(
@@ -121,6 +68,46 @@ nube_server <- function(input, output, session, datos, nombre_id) {
               label = "", 
               width = "100%"
             ),
+            fluidRow(
+              column(
+                width = 6,
+                selectInput(
+                  inputId = ns("subir_tabla_fecha_columna"),
+                  label = "Columna de fecha:",
+                  choices = as.character(datos$colnames),
+                  selected = "fecha_prestacion"
+                )
+              ),
+              column(
+                width = 6,
+                textInput(
+                  inputId = ns("subir_tabla_fecha_formato"),
+                  label = "Formato de fecha",
+                  value = "%d/%m/%Y"
+                )
+              )
+            ),
+            fluidRow(
+              column(
+                width = 6,
+                selectInput(
+                  inputId = ns("subir_tabla_nro_identificacion"),
+                  label = "Columna de número de identificacion:",
+                  choices = as.character(datos$colnames),
+                  selected = "nro_identificacion"
+                )
+              ),
+              column(
+                width = 6,
+                selectInput(
+                  inputId = ns("subir_tabla_valor_columna"),
+                  label = "Columna de valor:",
+                  choices = as.character(datos$colnames),
+                  selected = "valor"
+                )
+              )
+            ),
+            includeMarkdown("markdown/subir_tabla.md"),
             footer = actionButton(
               inputId = ns("subir_tabla_confirmar"),
               label = "Subir tabla")
@@ -142,6 +129,11 @@ nube_server <- function(input, output, session, datos, nombre_id) {
   
   observeEvent(input$subir_tabla_confirmar, {
     if (input$subir_tabla_nombre != "") {
+      columna_fecha <- input$subir_tabla_fecha_columna
+      columna_fecha_formato <- input$subir_tabla_fecha_formato
+      columna_nro_identificacion <- input$subir_tabla_nro_identificacion
+      columna_valor <- input$subir_tabla_valor_columna
+      
       removeModal(session = session)
       table_size <- round(feather_size_est(datos$data_table) / 1048576)
       print(table_size)
@@ -154,12 +146,49 @@ nube_server <- function(input, output, session, datos, nombre_id) {
             withProgress(
               message = "Subiendo base de datos a la nube.",
               expr = {
-              opciones_nube$resultados_subidas <- dbWriteTable(
-                con = base_de_datos_con,
-                name = Id(table = nombre_tabla,
-                          schema = Sys.getenv("DATABASE_SCHEMA")),
-                value = datos$data_table
-              )
+                datos_subir <- copy(datos$data_table)
+                setDT(datos_subir)
+                
+                print(names(datos_subir))
+                
+                tipos_columnas <- sapply(head(datos$data_table), class)
+                
+                if (tipos_columnas[[columna_fecha]] != "Date") {
+                  datos_subir[, "fecha_prestacion" := as.Date(
+                    get(columna_fecha), format = columna_fecha_formato)]
+                }
+                datos_subir[, "valor" := as.numeric(as.character(
+                  get(columna_nro_identificacion)))]
+                
+                datos_subir[, "nro_identificacion" := as.factor(
+                  get(columna_nro_identificacion)
+                )]
+                
+                opciones_nube$resultados_subidas <- dbWriteTable(
+                  conn = base_de_datos_con,
+                  name = Id(table = nombre_tabla,
+                            schema = Sys.getenv("DATABASE_SCHEMA")),
+                  value = datos_subir
+                )
+                
+                index_query <- str_replace_all(
+                  'CREATE INDEX #index_name#
+                  ON ais."#tabla#" USING btree
+                  (fecha_prestacion ASC NULLS LAST)
+                  INCLUDE(fecha_prestacion)',
+                  pattern = "#tabla#", replacement = nombre_tabla) %>%
+                  str_replace_all(
+                    pattern = "#index_name#",
+                    replacement = gsub(
+                      pattern = "([[:space:]])|(')|('$)|(\")|(\"$)|(\`)|(\`$)", 
+                      replacement = "_",
+                      paste(nombre_tabla, "fechas_index")))
+                
+                dbExecute(
+                  conn = base_de_datos_con,
+                  statement = index_query
+                )
+                
             })
           },
           error = function(e) {
