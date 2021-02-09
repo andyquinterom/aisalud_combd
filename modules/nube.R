@@ -180,7 +180,7 @@ nube_server <- function(input, output, session, datos, nombre_id) {
                   str_replace_all(
                     pattern = "#index_name#",
                     replacement = gsub(
-                      pattern = "[[:space:]]", 
+                      pattern = "([[:space:]])|(')|('$)|(\")|(\"$)|(\`)|(\`$)", 
                       replacement = "_",
                       paste(nombre_tabla, "fechas_index")))
                 
