@@ -158,7 +158,7 @@ nube_server <- function(input, output, session, datos, nombre_id) {
                     get(columna_fecha), format = columna_fecha_formato)]
                 }
                 datos_subir[, "valor" := as.numeric(as.character(
-                  get(columna_nro_identificacion)))]
+                  get(subir_tabla_valor_columna)))]
                 
                 datos_subir[, "nro_identificacion" := as.factor(
                   get(columna_nro_identificacion)
