@@ -15,8 +15,9 @@ feather_size_est <- function(obj, frac=1) {
   tf <- tempfile(tmpdir = tempdir(check =  TRUE))
   n <- ceiling(nrow(obj) * frac)
   write_feather(obj[seq_len(n),], path = tf)
-  1/frac * file.info(tf)$size
+  size <- 1/frac * file.info(tf)$size
   unlink(tf)
+  return(size)
 }
 
 set_utf8 <- function(x) {
