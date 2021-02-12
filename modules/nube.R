@@ -171,6 +171,12 @@ nube_server <- function(input, output, session, datos, nombre_id) {
                   value = datos_subir
                 )
                 
+                nombre_tabla_alpha_numeric <- gsub(
+                  pattern = "[^[:alnum:] ]",
+                  replacement = "",
+                  nombre_tabla
+                )
+                
                 index_query <- str_replace_all(
                   'CREATE INDEX #index_name#
                   ON ais."#tabla#" USING btree
@@ -182,7 +188,7 @@ nube_server <- function(input, output, session, datos, nombre_id) {
                     replacement = gsub(
                       pattern = "([[:space:]])|(')|('$)|(\")|(\"$)|(\`)|(\`$)", 
                       replacement = "_",
-                      paste(nombre_tabla, "fechas_index")))
+                      paste(nombre_tabla_alpha_numeric, "fechas_index")))
                 
                 dbExecute(
                   conn = base_de_datos_con,
