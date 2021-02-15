@@ -2,13 +2,13 @@ check_schema_size <- function(con, schema = "public") {
   query_string <- "select pg_size_pretty(pg_schema_size('######'::text));"
   query_send <- dbGetQuery(
     con, 
-    str_replace_all(query_string, "######", schema))
-  if (grepl("kB", query_send)) {
-    return(0)
-  } else {
-    return(
-      gsub("[^0-9.-]", "", query_send[[1]]) %>%
-        as.numeric()
-    )
+    str_replace_all(query_string, "######", schema)) %>%
+    unname() %>%
+    str_split(" ")
+  size_info <- query_send[[1]]
+  if (size_info[2] == "MB") {
+    return(as.numeric(size_info[1]))
+  } else if (size_info[2] == "GB") {
+    return(as.numeric(size_info[1]) * 1024)
   }
 }
