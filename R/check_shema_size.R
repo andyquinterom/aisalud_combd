@@ -6,6 +6,7 @@ check_schema_size <- function(con, schema = "public") {
     unname() %>%
     str_split(" ")
   size_info <- query_send[[1]]
+  if (is.na(size_info)) size_info <- c(0, "MB")
   if (size_info[2] == "MB") {
     return(as.numeric(size_info[1]))
   } else if (size_info[2] == "GB") {
