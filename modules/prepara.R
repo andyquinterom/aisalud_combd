@@ -113,11 +113,14 @@ prepara_server <- function(input, output, session, nombre_id) {
               yes = "\t",
               no = opciones_prepara$value_delimitador
             )
-            datos$data_original <- fread(
-              input = input$file$datapath, 
-              sep = value_delimitador, 
-              dec = opciones_prepara$value_decimal,
-              data.table = TRUE)
+            datos$data_original <- read_delim(
+              file = input$file$datapath, 
+              delim = value_delimitador, 
+              col_types = cols(.default = col_character()),
+              locale = locale(
+                encoding = guess_encoding(input$file$datapath)[[1]][1],
+                decimal_mark = opciones_prepara$value_decimal)) %>%
+              as.data.table()
             setnames(datos$data_original, tolower(colnames(datos$data_original)))
             datos$data_table <- datos$data_original
             datos$valores_unicos <- lapply(datos$data_table, unique)
