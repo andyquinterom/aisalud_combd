@@ -50,7 +50,7 @@ descargar_server <- function(input, output, session, datos) {
             ".csv", sep="")
     },
     content = function(file) {
-      data.table::fwrite(
+      readr::write_csv(
         x = datos$data_table,
         file = file)
     }, 
