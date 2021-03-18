@@ -27,16 +27,11 @@ nube_server <- function(input, output, session, datos, nombre_id) {
   
   observeEvent(update_almacenamiento(), {
     if (!is.null(base_de_datos_con)) {
-      opciones_nube$tablas_almacenadas <- dbGetQuery(
-        base_de_datos_con,
-        paste0("SELECT table_name FROM information_schema.tables
-      WHERE table_schema='", Sys.getenv("DATABASE_SCHEMA"), "'")) %>%
-        unlist() %>%
-        unname()
+      opciones_nube$tablas_almacenadas <- dbListTables(base_de_datos_con) 
       
-      opciones_nube$almacenamiento <- check_schema_size(
+      opciones_nube$almacenamiento <- check_db_size(
         con = base_de_datos_con,
-        schema = Sys.getenv("DATABASE_SCHEMA")
+        database = Sys.getenv("DATABASE_NAME")
       ) %>% ifelse(is.na(.),
                    yes = 0,
                    no = .)
@@ -44,13 +39,7 @@ nube_server <- function(input, output, session, datos, nombre_id) {
       opciones_nube$almacenamiento_total <- Sys.getenv("DATABASE_MAX_STORAGE") %>%
         as.numeric()
       
-      opciones_nube$tablas_almacenadas <- dbGetQuery(
-        base_de_datos_con,
-        paste0("SELECT table_name FROM information_schema.tables
-               WHERE table_schema='", 
-               Sys.getenv("DATABASE_SCHEMA"), "'")) %>%
-        unlist() %>%
-        unname()  
+      opciones_nube$tablas_almacenadas <- dbListTables(base_de_datos_con) 
     }
   })
   
@@ -107,6 +96,17 @@ nube_server <- function(input, output, session, datos, nombre_id) {
                 )
               )
             ),
+            fluidRow(
+              column(
+                width = 6,
+                selectInput(
+                  inputId = ns("subir_tabla_cantidad"),
+                  label = "Columna de número de cantidad:",
+                  choices = as.character(datos$colnames),
+                  selected = "cantidad"
+                )
+              )
+            ),
             includeMarkdown("markdown/subir_tabla.md"),
             footer = actionButton(
               inputId = ns("subir_tabla_confirmar"),
@@ -133,6 +133,7 @@ nube_server <- function(input, output, session, datos, nombre_id) {
       columna_fecha_formato <- input$subir_tabla_fecha_formato
       columna_nro_identificacion <- input$subir_tabla_nro_identificacion
       columna_valor <- input$subir_tabla_valor_columna
+      columna_cantidad <- input$subir_tabla_cantidad
       
       removeModal(session = session)
       table_size <- round(feather_size_est(datos$data_table) / 1048576)
@@ -140,7 +141,7 @@ nube_server <- function(input, output, session, datos, nombre_id) {
       print(table_size + opciones_nube$almacenamiento)
       if (table_size + opciones_nube$almacenamiento <
           opciones_nube$almacenamiento_total) {
-        nombre_tabla <- tolower(input$subir_tabla_nombre)
+        nombre_tabla <- paste0("ais_", tolower(input$subir_tabla_nombre))
         tryCatch(
           expr = {
             withProgress(
@@ -160,14 +161,21 @@ nube_server <- function(input, output, session, datos, nombre_id) {
                 datos_subir[, "valor" := as.numeric(as.character(
                   get(columna_valor)))]
                 
+                datos_subir[, "cantidad" := as.numeric(as.character(
+                  get(columna_cantidad)))]
+                
                 datos_subir[, "nro_identificacion" := as.factor(
                   get(columna_nro_identificacion)
                 )]
                 
+                datos_subir <- datos_subir %>%
+                  mutate(ais_mes = lubridate::month(fecha_prestacion),
+                         ais_anio = lubridate::year(fecha_prestacion),
+                         ais_mes_esp = mes_spanish(ais_mes))
+                
                 opciones_nube$resultados_subidas <- dbWriteTable(
                   conn = base_de_datos_con,
-                  name = Id(table = nombre_tabla,
-                            schema = Sys.getenv("DATABASE_SCHEMA")),
+                  name = nombre_tabla,
                   value = datos_subir
                 )
                 
@@ -179,7 +187,7 @@ nube_server <- function(input, output, session, datos, nombre_id) {
                 
                 index_query <- str_replace_all(
                   'CREATE INDEX #index_name#
-                  ON ais."#tabla#" USING btree
+                  ON "#tabla#" USING btree
                   (fecha_prestacion ASC NULLS LAST)
                   INCLUDE(fecha_prestacion)',
                   pattern = "#tabla#", replacement = nombre_tabla) %>%
@@ -280,7 +288,6 @@ nube_server <- function(input, output, session, datos, nombre_id) {
           withProgress({
             dbRemoveTable(
               con = base_de_datos_con,
-              schema = Sys.getenv("DATABASE_SCHEMA"),
               name = opciones_nube$tablas_almacenadas[
                 input$tablas_lista_rows_selected]
             )

@@ -38,14 +38,7 @@ base_de_datos_con <- dbConnect(
   password = Sys.getenv("DATABASE_PW"),
   host = Sys.getenv("DATABASE_HOST"),
   port = Sys.getenv("DATABASE_PORT"),
-  options = paste0("-c search_path=", Sys.getenv("DATABASE_SCHEMA")),
   sslmode = "require")
-
-dbSendQuery(
-  base_de_datos_con,
-  str_replace_all("SET search_path = public, ######;",
-                  "######", Sys.getenv("DATABASE_SCHEMA"))
-)
 
 print(dbGetQuery(
   base_de_datos_con,
