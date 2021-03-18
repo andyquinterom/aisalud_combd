@@ -27,19 +27,21 @@ nube_server <- function(input, output, session, datos, nombre_id) {
   
   observeEvent(update_almacenamiento(), {
     if (!is.null(base_de_datos_con)) {
-      opciones_nube$tablas_almacenadas <- dbListTables(base_de_datos_con) 
+      opciones_nube$tablas_almacenadas <- dbListTables(base_de_datos_con) %>% {
+        if (identical(character(0), .)) {NULL} else {.}}
       
       opciones_nube$almacenamiento <- check_db_size(
         con = base_de_datos_con,
         database = Sys.getenv("DATABASE_NAME")
-      ) %>% ifelse(is.na(.),
+      ) %>% ifelse(is.null(.),
                    yes = 0,
                    no = .)
       
       opciones_nube$almacenamiento_total <- Sys.getenv("DATABASE_MAX_STORAGE") %>%
         as.numeric()
       
-      opciones_nube$tablas_almacenadas <- dbListTables(base_de_datos_con) 
+      opciones_nube$tablas_almacenadas <- dbListTables(base_de_datos_con) %>% {
+        if (identical(character(0), .)) {NULL} else {.}}
     }
   })
   
