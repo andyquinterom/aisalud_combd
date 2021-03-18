@@ -1,10 +1,10 @@
-subir_a_base_de_datos <- function(nombre, datos, con, schema) {
+subir_a_base_de_datos <- function(nombre, datos, con, schema = "public") {
   dbWriteTable(conn = con, 
                Id(schema = schema, table = nombre),
                value = datos)
 }
 
-borrar_tabla <- function(nombre, con, schema) {
+borrar_tabla <- function(nombre, con, schema = "public") {
   dbRemoveTable(
     conn = con,
     Id(schema = schema, table = nombre)

@@ -1,8 +1,8 @@
-check_schema_size <- function(con, schema = "public") {
-  query_string <- "select pg_size_pretty(pg_schema_size('######'::text));"
+check_db_size <- function(con, database) {
+  query_string <- "SELECT pg_size_pretty(pg_database_size('######'));"
   query_send <- dbGetQuery(
     con, 
-    str_replace_all(query_string, "######", schema)) %>%
+    str_replace_all(query_string, "######", database)) %>%
     unname() %>%
     str_split(" ")
   size_info <- query_send[[1]]
