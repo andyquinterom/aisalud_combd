@@ -1,9 +1,16 @@
 shinyServer(function(input, output, session) {
   
-  opciones <- reactiveValues()
+  opciones <- reactiveValues(
+    cambios = list()
+  )
   
   prepara_server(
     id = "cargar_datos",
+    opciones = opciones
+  )
+  
+  columnas_server(
+    id = "convertir_columnas",
     opciones = opciones
   )
   

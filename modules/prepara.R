@@ -111,10 +111,12 @@ prepara_server <- function(id, opciones) {
                 dbWriteTable(
                   conn = conn,
                   name = nombre_tabla_temporal,
-                  value = data_original,
+                  value = {data_original %>% rename_with(tolower)},
                   temporary = TRUE)
                 
                 opciones$tabla_original <- tbl(conn, nombre_tabla_temporal)
+                
+                opciones$tabla <- opciones$tabla_original
                 
                 rm(data_original)
                 gc(full = TRUE)
