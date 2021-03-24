@@ -31,7 +31,7 @@ options(shiny.maxRequestSize = 100 * 1024 ^ 3)
 
 print(Sys.getenv("DATABASE_SCHEMA"))
 
-base_de_datos_con <- dbConnect(
+conn <- dbConnect(
   RPostgres::Postgres(),
   dbname = Sys.getenv("DATABASE_NAME"),
   user = Sys.getenv("DATABASE_USER"),
@@ -41,7 +41,7 @@ base_de_datos_con <- dbConnect(
   sslmode = "require")
 
 print(dbGetQuery(
-  base_de_datos_con,
+  conn,
   "SHOW client_encoding;"
 ))
 

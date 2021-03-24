@@ -12,7 +12,7 @@ prepara_ui <- function(id) {
       inputId = ns("file_type"),
       label = "Tipo de archivo",
       inline = TRUE, 
-      choices = c("csv", "feather", "datos didacticos", "RIPS")),
+      choices = c("csv", "feather")),
     fluidRow(
       column(width = 6, actionButton(
         inputId = ns("file_options_open"),
@@ -30,276 +30,113 @@ prepara_ui <- function(id) {
     )
 }
 
-prepara_server <- function(input, output, session, nombre_id) {
+prepara_server <- function(id, opciones) {
   
-  id <- nombre_id
   ns <- NS(id)
   
-  opciones_prepara <- reactiveValues(
-    "value_decimal" = ".",
-    "value_delimitador" = ",",
-    "value_sheet" = NULL,
-    "value_range" = NULL
-  )
-  
-  datos <- reactiveValues(
-    "data_table" = data.table(),
-    "data_original" = data.table(),
-    "colnames" = NULL
-  )
-  
-  observeEvent(input$file_options_open, {
-    showModal(
-      session = session,
-      ui = modalDialog(
-        title = "Opciones archivo",
-        easyClose = TRUE,
-        fade = TRUE,
-        datos_opciones_ui(
-          id = id,
-          file_type = input$file_type,
-          value_decimal = opciones_prepara$value_decimal,
-          value_delimitador = opciones_prepara$value_delimitador,
-          value_range = opciones_prepara$value_range,
-          value_sheet = opciones_prepara$value_sheet,
-          value_file = opciones_prepara$value_file),
-        footer = actionButton(
-          inputId = ns("datos_opciones_guardar"),
-          label = "Guardar")
+  moduleServer(
+    id = id,
+    module = function(input, output, session) {
+      
+      opciones_prepara <- reactiveValues(
+        "value_decimal" = ".",
+        "value_delimitador" = ",",
+        "value_sheet" = NULL,
+        "value_range" = NULL
       )
-    )
-  })
-  
-  observeEvent(input$datos_opciones_guardar, {
-    opciones_prepara$value_decimal <- input$value_decimal
-    opciones_prepara$value_delimitador <- input$value_delimitador
-    opciones_prepara$value_sheet <- input$value_sheet
-    opciones_prepara$value_range <- input$value_range
-    opciones_prepara$value_file <- input$value_file
-    removeModal(session = session)
-  })
-  
-  output$logs <- renderText({
-    datos$rips[["warnings"]]
-  })
-  
-  observeEvent(input$file_load, {
-    tryCatch(
-      expr = {
-        if (input$file_type == "datos didacticos" &&
-            !is.null(opciones_prepara$value_file)) {
-          datos$file_name <- opciones_prepara$value_file
-          datos$data_original <- as.data.table(
-            read_feather(
-              path = paste0("datos/didacticos/", opciones_prepara$value_file))
-          )
-          setnames(datos$data_original, tolower(colnames(datos$data_original)))
-          datos$data_table <- datos$data_original
-          datos$valores_unicos <- lapply(datos$data_table, unique)
-          datos$colnames <- colnames(datos$data_table)
-          columnas_num <- unlist(lapply(datos$data_table[1,], is.numeric))
-          datos$colnames_num <- datos$colnames[columnas_num]
-        }
-        if (!is.null(input$file)) {
-          if (input$file_type == "csv") {
-            datos$colnames <- NULL
-            datos$colnames_num <- NULL
-            datos$file_name <- sub(
-              ".csv$|.feather$|.txt$|.xlsx$",
-              "",
-              basename(input$file$name))
-            value_delimitador <- ifelse(
-              test = opciones_prepara$value_delimitador == "Espacios",
-              yes = "\t",
-              no = opciones_prepara$value_delimitador
-            )
-            datos$data_original <- read_delim(
-              file = input$file$datapath, 
-              delim = value_delimitador, 
-              col_types = cols(.default = col_character()),
-              locale = locale(
-                encoding = guess_encoding(input$file$datapath)[[1]][1],
-                decimal_mark = opciones_prepara$value_decimal)) %>%
-              as.data.table()
-            setnames(datos$data_original, tolower(colnames(datos$data_original)))
-            datos$data_table <- datos$data_original
-            datos$valores_unicos <- lapply(datos$data_table, unique)
-            datos$colnames <- colnames(datos$data_table)
-            columnas_num <- unlist(lapply(datos$data_table[1,], is.numeric))
-            datos$colnames_num <- datos$colnames[columnas_num]
-          } 
-          if (input$file_type == "feather") {
-            datos$colnames <- NULL
-            datos$colnames_num <- NULL
-            datos$file_name <- sub(
-              ".csv$|.feather$|.txt$|.xlsx$",
-              "",
-              basename(input$file$name))
-            datos$data_original <- as.data.table(
-              read_feather(
-                path = input$file$datapath)
-            )
-            setnames(datos$data_original, tolower(colnames(datos$data_original)))
-            datos$data_table <- datos$data_original
-            datos$valores_unicos <- lapply(datos$data_table, unique)
-            datos$colnames <- colnames(datos$data_table)
-            columnas_num <- unlist(lapply(datos$data_table[1,], is.numeric))
-            datos$colnames_num <- datos$colnames[columnas_num]
-          }
-          if (input$file_type == "RIPS") {
-            if (is.null(opciones_prepara$prestadores_unicos)) {
-              withProgress(
-                min = 0,
-                max = 1,
-                value = 0.5,
-                message = "Leyendo archivos...",
-                detail = "Puede tardar varios minutos...",
-                expr = {
-                  folder_unzip <- tempfile()
-                  dir.create(path = folder_unzip)
-                  datos$rips <- withCallingHandlers(
-                    expr = un_zip_rips(
-                      path = input$file$datapath,
-                      session = session,
-                      folder_unzip = folder_unzip),
-                    message = function(m) output$logs <- renderPrint(m$message)
-                  )
-                  print("Warnings:")
-                  print(datos$rips[["warnings"]])
-                  unlink(folder_unzip)
-                }
-              )
-              print(colnames(datos$rips$af$tabla))
-              opciones_prepara$prestadores_unicos_lista <- 
-                datos$rips[["af"]][["tabla"]][, c(
-                  "nombre_prestador", "cod_prestador")] %>%
-                unique() %>%
-                t()
-              print(opciones_prepara$prestadores_unicos_lista)
-              colnames(opciones_prepara$prestadores_unicos_lista) <- 
-                opciones_prepara$prestadores_unicos_lista[1,]
-              opciones_prepara$prestadores_unicos <- 
-                opciones_prepara$prestadores_unicos_lista[-1,]
-            }
-            showModal(
-              session = session,
-              ui = modalDialog(
-                title = "Prestadores a consolidar.",
-                easyClose = TRUE,
-                fade = TRUE,
-                selectizeInput(
-                  choices = opciones_prepara$prestadores_unicos,
-                  inputId = ns("consolidar_rips_prestador"),
-                  label = NULL,
-                  width = "100%"
-                ),
-                footer = actionButton(
-                  inputId = ns("consolidar_rips_confirmar"),
-                  label = "Consolidar")
-              )
-            )
-            
-          }
-        }
-      },
-      error = function(e) {
-        print(e)
-        sendSweetAlert(
+      
+      observeEvent(input$file_options_open, {
+        showModal(
           session = session,
-          title = "Error",
-          text = e[1],
-          type = "error"
-        )
-      }
-    )
-  })
-  
-  observeEvent(input$consolidar_rips_confirmar, {
-    if (!is.null(opciones_prepara$prestadores_unicos)) {
-      if (!is.null(input$consolidar_rips_prestador)) {
-    withProgress(
-      min = 0,
-      max = 0,
-      detail = "Generando relaciones...",
-      expr = {
-        datos$data_original <- leer_rips_todos(
-          datos = datos$rips,
-          prestadores = input$consolidar_rips_prestador,
-          cups = read_feather(
-            "datos/didacticos/Nombres de prestacion con CUPS.feather"),
-          session = session
-        )
-        setnames(datos$data_original, tolower(colnames(datos$data_original)))
-        datos$data_table <- datos$data_original
-        datos$valores_unicos <- lapply(datos$data_table, unique)
-        datos$colnames <- colnames(datos$data_table)
-        columnas_num <- unlist(lapply(datos$data_table[1,], is.numeric))
-        datos$colnames_num <- datos$colnames[columnas_num]
-      }
-    )
-      }
-    }
-  })
-  
-  observeEvent(datos$colnames, {
-    updateSelectizeInput(
-      session = session,
-      inputId = "columna_valor",
-      choices = datos$colnames_num,
-      selected = "valor"
-    )
-  })
-  
-  
-  output$preview <- DT::renderDataTable({
-    if (is.null(datos$colnames)) {
-      data.table()
-    } else {
-      tryCatch(
-        expr = {
-          columnas <- intersect(
-            x = c(
-              "nro_identificacion",
-              "fecha_prestacion",
-              "valor"),
-            y = names(datos$data_original[1])
+          ui = modalDialog(
+            title = "Opciones archivo",
+            easyClose = TRUE,
+            fade = TRUE,
+            datos_opciones_ui(
+              id = id,
+              file_type = input$file_type,
+              value_decimal = opciones_prepara$value_decimal,
+              value_delimitador = opciones_prepara$value_delimitador,
+              value_range = opciones_prepara$value_range,
+              value_sheet = opciones_prepara$value_sheet,
+              value_file = opciones_prepara$value_file),
+            footer = actionButton(
+              inputId = ns("datos_opciones_guardar"),
+              label = "Guardar")
           )
-          DT::datatable(
-            data = datos$data_original[
-              1:5,
-              columnas,
-              with = FALSE],
-            rownames = FALSE,
-            options = list(
-              columnDefs = list(
-                list(
-                  className = 'dt-center',
-                  targets = "_all")),
-              dom = 't',
-              pageLength = 5,
-              ordering = FALSE,
-              language = list(
-                url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')
-            )) %>%
-            DT::formatStyle(
-              columns = 1:length(columnas),
-              valueColumns = 1,
-              backgroundColor = "white")
-        },
-        error = function(e) {
-          print(e[1])
-          sendSweetAlert(
-            session = session,
-            title = "Error",
-            text = e[1],
-            type = "error"
-          )
-        }
-      )
+        )
+      })
+      
+      observeEvent(input$datos_opciones_guardar, {
+        opciones_prepara$value_decimal <- input$value_decimal
+        opciones_prepara$value_delimitador <- input$value_delimitador
+        opciones_prepara$value_sheet <- input$value_sheet
+        opciones_prepara$value_range <- input$value_range
+        opciones_prepara$value_file <- input$value_file
+        removeModal(session = session)
+      })
+      
+      observeEvent(input$file_load, {
+        tryCatch(
+          expr = {
+            if (!is.null(input$file)) {
+              data_original <- data.frame()
+              file_name <- sub(
+                ".csv$|.feather$|.txt$|.xlsx$",
+                "",
+                basename(input$file$name))
+              if (input$file_type == "csv") {
+                value_delimitador <- ifelse(
+                  test = opciones_prepara$value_delimitador == "Espacios",
+                  yes = "\t",
+                  no = opciones_prepara$value_delimitador
+                )
+                data_original <- read_delim(
+                  file = input$file$datapath, 
+                  delim = value_delimitador, 
+                  col_types = cols(.default = col_character()),
+                  locale = locale(
+                    encoding = guess_encoding(input$file$datapath)[[1]][1],
+                    decimal_mark = opciones_prepara$value_decimal))
+              } 
+              if (input$file_type == "feather") {
+                data_original <- read_feather(
+                  path = input$file$datapath)
+              }
+              nombre_tabla_temporal <- paste(
+                "temporal", file_name,
+                round(runif(1, 100, 999), 0))
+              
+              if (nrow(data_original) > 0) {
+                dbWriteTable(
+                  conn = conn,
+                  name = nombre_tabla_temporal,
+                  value = data_original,
+                  temporary = TRUE)
+                
+                opciones$tabla_original <- tbl(conn, nombre_tabla_temporal)
+                
+                rm(data_original)
+                gc(full = TRUE)
+                
+              }
+              
+            }
+          },
+          error = function(e) {
+            print(e)
+            sendSweetAlert(
+              session = session,
+              title = "Error",
+              text = e[1],
+              type = "error"
+            )
+          }
+        )
+      })
+      
     }
-  })
-  
-  return(datos)
+  )
   
 }
 
