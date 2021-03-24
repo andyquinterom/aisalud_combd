@@ -73,6 +73,11 @@ columnas_server <- function(id, opciones) {
           opciones$colnames <- opciones$tabla %>% 
             colnames()
           
+          opciones$coltypes <- opciones$tabla %>% 
+            head(0) %>% 
+            collect() %>% 
+            summarise_all(class)
+          
           columnas$tabla <- data.frame(
             "Columnas" = as.character(opciones$colnames))
           
@@ -108,10 +113,16 @@ columnas_server <- function(id, opciones) {
       observeEvent(input$columnas_cell_edit, {
         
         columna_cambio <- input$columnas_cell_edit$row
+        viejo_nombre <- opciones$colnames[columna_cambio]
         nuevo_nombre <- input$columnas_cell_edit$value
         
-        opciones$cambios[[paste("renombrar", nuevo_nombre)]] <- 
-          function(x) {rename(x, !!nuevo_nombre := columna_cambio)}
+        if (nchar(nuevo_nombre) == 0) {
+          opciones$cambios[[paste("eliminar", viejo_nombre)]] <- 
+            function(x) {select(x, -c(columna_cambio))}
+        } else {
+          opciones$cambios[[paste(viejo_nombre, "a", nuevo_nombre)]] <- 
+            function(x) {rename(x, !!nuevo_nombre := columna_cambio)}
+        }
         
       })
 

@@ -24,6 +24,7 @@ prepara_ui <- function(id) {
         width = "100%")),
       column(width = 12, 
              tags$br(),
+             actionButton(ns("undo"), "undo"),
              div(verbatimTextOutput(ns("logs")),
                  class = "error_logs"))
     )
@@ -118,6 +119,8 @@ prepara_server <- function(id, opciones) {
                 
                 opciones$tabla <- opciones$tabla_original
                 
+                opciones$cambios <- list()
+                
                 rm(data_original)
                 gc(full = TRUE)
                 
@@ -137,6 +140,20 @@ prepara_server <- function(id, opciones) {
         )
       })
       
+      observe({
+        opciones$tabla <- map_func(opciones$tabla_original, opciones$cambios)
+        print(opciones$tabla)
+      })
+     
+      output$logs <- renderText({
+        paste(names(opciones$cambios), collapse = "\n")
+      })
+      
+      observeEvent(input$undo, {
+        n_cambios <- length(opciones$cambios)
+        opciones$cambios <- opciones$cambios[-n_cambios]
+      })
+       
     }
   )
   
