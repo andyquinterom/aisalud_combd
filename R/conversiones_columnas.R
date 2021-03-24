@@ -58,3 +58,18 @@ conversion_tipousuario <- function(tipo_usuario) {
     )
   )
 }
+
+map_func <- function(object, functions) {
+  n_functions <- length(functions)
+  
+  if (n_functions == 0) {
+    return(object)
+  } else {
+    object %>% 
+      functions[1][[1]]() %>% 
+      map_func(functions[-1])
+  }
+  
+}
+
+
