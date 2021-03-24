@@ -32,3 +32,18 @@ set_utf8 <- function(x) {
   x
 }
 
+lazy_to_postgres <- function(datos, nombre, conn, schema = "public") {
+  query <- paste0(
+      'SELECT * 
+      INTO #tabla#
+      FROM ( ',
+      dbplyr::sql_render(datos),
+      " ) AS alias") %>%
+    str_replace_all(
+      pattern = "#tabla#", 
+      replacement = dbQuoteIdentifier(conn, x = nombre)
+    )
+  
+  dbExecute(conn, query)
+  
+}
