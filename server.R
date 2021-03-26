@@ -4,6 +4,10 @@ shinyServer(function(input, output, session) {
     cambios = list()
   )
   
+  opciones_agrupadores <- reactiveValues(
+    cambios = list()
+  )
+  
   prepara_server(
     id = "cargar_datos",
     opciones = opciones
@@ -16,35 +20,16 @@ shinyServer(function(input, output, session) {
   
   # Modulo para cargar datos
   
-  # datos <- callModule(
-  #   module = prepara_server,
-  #   id = "cargar_datos",
-  #   nombre_id = "cargar_datos"
-  # )
+  prepara_server(
+    id = "cargar_agrupadores",
+    opciones = opciones_agrupadores
+  )
   
-  # agrupadores <- callModule(
-  #   module = prepara_server,
-  #   id = "cargar_agrupadores",
-  #   nombre_id = "cargar_agrupadores"
-  # )
-  # 
-  # # Modulo de columnas
-  # 
-  # callModule(
-  #   module = columnas_server,
-  #   id = "convertir_columnas",
-  #   datos = datos,
-  #   nombre_id = "convertir_columnas",
-  #   muestreo = TRUE
-  # )
-  # 
-  # callModule(
-  #   module = columnas_server,
-  #   id = "agrupadores_columnas",
-  #   datos = agrupadores,
-  #   nombre_id = "agrupadores_columnas"
-  # )
-  # 
+  columnas_server(
+    id = "agrupadores_columnas",
+    opciones = opciones_agrupadores
+  )
+  
   # # Modulo de datos en la nube
   # 
   # callModule(
@@ -55,14 +40,20 @@ shinyServer(function(input, output, session) {
   # )
   # 
   # # Modulo de agrupadores
-  # 
+
+  agrupadores_server(
+    id = "agrupadores",
+    opciones = opciones,
+    opciones_agrupadores = opciones_agrupadores
+  )
+  
   # callModule(
   #   module = agrupadores_server,
   #   id = "agrupadores",
   #   datos = datos,
   #   agrupadores = agrupadores
   # )
-  # 
+
   # # Modulo de filtros
   # 
   # callModule(
