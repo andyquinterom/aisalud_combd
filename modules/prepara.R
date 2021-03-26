@@ -107,6 +107,7 @@ prepara_server <- function(id, opciones, validar_fecha = FALSE) {
               }
               
               opciones$nombre_tabla <- paste(
+                sep = "_",
                 "temporal", file_name,
                 round(runif(1, 100, 999), 0))
               

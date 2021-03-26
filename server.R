@@ -32,14 +32,19 @@ shinyServer(function(input, output, session) {
   )
   
   # # Modulo de datos en la nube
-  # 
+
+  nube_server(
+    id = "nube_datos",
+    opciones = opciones,
+    opciones_agrupador = opciones_agrupador
+  )
   # callModule(
   #   module = nube_server,
   #   id = "nube_datos",
   #   nombre_id = "nube_datos",
   #   datos = datos
   # )
-  # 
+
   # # Modulo de agrupadores
 
   agrupadores_server(

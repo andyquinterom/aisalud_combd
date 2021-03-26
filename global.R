@@ -29,8 +29,6 @@ for (i in paste0("R/", list.files("R/"))) {
 
 options(shiny.maxRequestSize = 100 * 1024 ^ 3)
 
-print(Sys.getenv("DATABASE_SCHEMA"))
-
 conn <- dbConnect(
   RPostgres::Postgres(),
   dbname = Sys.getenv("DATABASE_NAME"),
@@ -40,8 +38,6 @@ conn <- dbConnect(
   port = Sys.getenv("DATABASE_PORT"),
   sslmode = "require")
 
-print(dbGetQuery(
-  conn,
-  "SHOW client_encoding;"
-))
-
+onStop(function() {
+  dbDisconnect(conn = conn)
+})
