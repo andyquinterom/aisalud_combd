@@ -60,16 +60,17 @@ conversion_tipousuario <- function(tipo_usuario) {
 }
 
 map_func <- function(object, functions) {
-  n_functions <- length(functions)
+  temp_obj <- object
   
-  if (n_functions == 0) {
-    return(object)
-  } else {
-    object %>% 
-      functions[1][[1]]() %>% 
-      map_func(functions[-1])
-  }
+  lapply(
+    X = functions,
+    FUN = function(x) {
+      temp_obj <<- temp_obj %>% 
+        x()
+    }
+  )
   
+  return(temp_obj)
 }
 
 

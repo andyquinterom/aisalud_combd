@@ -142,7 +142,6 @@ prepara_server <- function(id, opciones) {
       
       observe({
         opciones$tabla <- map_func(opciones$tabla_original, opciones$cambios)
-        print(opciones$tabla)
       })
      
       output$logs <- renderText({
