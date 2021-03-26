@@ -10,7 +10,8 @@ shinyServer(function(input, output, session) {
   
   prepara_server(
     id = "cargar_datos",
-    opciones = opciones
+    opciones = opciones,
+    validar_fecha = TRUE
   )
   
   columnas_server(

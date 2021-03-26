@@ -31,7 +31,7 @@ prepara_ui <- function(id) {
     )
 }
 
-prepara_server <- function(id, opciones) {
+prepara_server <- function(id, opciones, validar_fecha = FALSE) {
   
   ns <- NS(id)
   
@@ -81,7 +81,8 @@ prepara_server <- function(id, opciones) {
         tryCatch(
           expr = {
             if (!is.null(input$file)) {
-              data_original <- data.frame()
+              opciones$data_original <- data.frame()
+              opciones$validar_fecha <- !validar_fecha
               file_name <- sub(
                 ".csv$|.feather$|.txt$|.xlsx$",
                 "",
@@ -92,7 +93,7 @@ prepara_server <- function(id, opciones) {
                   yes = "\t",
                   no = opciones_prepara$value_delimitador
                 )
-                data_original <- read_delim(
+                opciones$data_original <- read_delim(
                   file = input$file$datapath, 
                   delim = value_delimitador, 
                   col_types = cols(.default = col_character()),
@@ -101,30 +102,17 @@ prepara_server <- function(id, opciones) {
                     decimal_mark = opciones_prepara$value_decimal))
               } 
               if (input$file_type == "feather") {
-                data_original <- read_feather(
+                opciones$data_original <- read_feather(
                   path = input$file$datapath)
               }
-              nombre_tabla_temporal <- paste(
+              
+              opciones$nombre_tabla <- paste(
                 "temporal", file_name,
                 round(runif(1, 100, 999), 0))
               
-              if (nrow(data_original) > 0) {
-                dbWriteTable(
-                  conn = conn,
-                  name = nombre_tabla_temporal,
-                  value = {data_original %>% rename_with(tolower)},
-                  temporary = TRUE)
-                
-                opciones$tabla_original <- tbl(conn, nombre_tabla_temporal)
-                
-                opciones$tabla <- opciones$tabla_original
-                
-                opciones$cambios <- list()
-                
-                rm(data_original)
-                gc(full = TRUE)
-                
-              }
+              opciones$data_original <- opciones$data_original %>% 
+                rename_with(tolower)
+              
               
             }
           },
@@ -138,6 +126,89 @@ prepara_server <- function(id, opciones) {
             )
           }
         )
+      })
+      
+      observeEvent(opciones$data_original, {
+        if (nrow(opciones$data_original > 0)) {
+          if (!opciones$validar_fecha) {
+            showModal(
+              session = session,
+              ui = modalDialog(
+                title = "Columna de fecha",
+                fluidRow(
+                  column(
+                    width = 4,
+                    selectInput(
+                      inputId = ns("fecha_columna"),
+                      label = "Columna de fecha:",
+                      choices = as.character(colnames(opciones$data_original)),
+                      selected = "fecha_prestacion"
+                    )
+                  ),
+                  column(
+                    width = 4,
+                    textInput(
+                      inputId = ns("fecha_formato"),
+                      label = "Formato de fecha",
+                      value = "%d/%m/%Y"
+                    )
+                  )
+                ),
+                footer = actionButton(
+                  inputId = ns("confirmar_fecha"),
+                  label = "Validar columna de fecha")
+              )
+            )
+          } else {
+            withProgress(message = "Cargando datos", {
+              dbWriteTable(
+                conn = conn,
+                name = opciones$nombre_tabla,
+                value = opciones$data_original,
+                temporary = TRUE)
+              
+              opciones$tabla_original <- tbl(conn, opciones$nombre_tabla)
+              
+              opciones$tabla <- opciones$tabla_original
+              
+              opciones$cambios <- list()
+              
+              opciones$data_original <- NULL
+              gc(full = TRUE)
+            })
+          }
+        }
+      })
+      
+      observeEvent(input$confirmar_fecha, {
+        fecha_columna <- input$fecha_columna
+        fecha_formato <- input$fecha_formato
+        
+        tryCatch(
+          expr = {
+            opciones$data_original <- opciones$data_original %>% 
+              mutate(!!fecha_columna := as.Date(!!as.name(fecha_columna),
+                                                format = fecha_formato))
+            
+            if (class(pull(opciones$data_original, !!as.name(fecha_columna)))
+                == "Date") {
+              opciones$validar_fecha = TRUE
+              removeModal()
+            } else {
+              showNotification("Columna no fue convertida a fecha.",
+                               type = "warning")
+            }
+          },
+          error = function(e) {
+            print(e)
+            showNotification(
+              ui = "No se pudo convertir a fecha",
+              type = "error",
+              session = session
+            )
+          }
+        )
+        
       })
       
       observe({
