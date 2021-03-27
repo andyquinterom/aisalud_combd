@@ -14,7 +14,7 @@ nube_ui <- function(id) {
   )
 }
 
-nube_server <- function(id, opciones, opciones_agrupador) {
+nube_server <- function(id, opciones, opciones_agrupadores) {
   
   ns <- NS(id)
   
@@ -189,6 +189,85 @@ nube_server <- function(id, opciones, opciones_agrupador) {
             showNotification(
               type = "warning",
               ui = "Columna de fecha invalida o almacenamiento lleno."
+            )
+          }
+          opciones_nube$resultados_subidas <- NULL
+        } else {
+          showNotification(
+            ui = "El nombre no puede ser vacio.",
+            type = "error",
+            session = session
+          )
+        }
+      })
+      
+      observeEvent(input$subir_agrupadores, {
+        if (!is.null(opciones_agrupadores$colnames)) {
+          if (opciones_nube$almacenamiento <
+              opciones_nube$almacenamiento_total) {
+            showModal(
+              session = session,
+              ui = modalDialog(
+                title = "Nombre de la tabla de agrupadores",
+                textInput(
+                  inputId = ns("subir_agrupadores_nombre"),
+                  label = "",
+                  width = "100%"
+                ),
+                footer = actionButton(
+                  inputId = ns("subir_agrupadores_confirmar"),
+                  label = "Subir agrupadores")
+              )
+            )
+          } else {
+            sendSweetAlert(
+              session = session,
+              title = "Archivo demasiado grande.",
+              text = paste0(
+                "Los datos que esta intentando subir son demasiado extensos. \n",
+                "Se supera el límite de ", opciones_nube$almacenamiento_total,
+                " MB.\n", "Por favor borrar alguna tabla para continuar."),
+              type = "error"
+            )
+          }
+        }
+      })
+      
+      observeEvent(input$subir_agrupadores_confirmar, {
+        if (input$subir_agrupadores_nombre != "") {
+          removeModal(session = session)
+          
+          if (opciones_nube$almacenamiento < opciones_nube$almacenamiento_total) {
+            nombre_tabla <- paste0(
+              "agrupador_",
+              tolower(input$subir_agrupadores_nombre))
+            tryCatch(
+              expr = {
+                withProgress(
+                  message = "Subiendo base de datos a la nube.",
+                  expr = {
+                    
+                    opciones_agrupadores$tabla %>% 
+                      lazy_to_postgres(
+                        nombre = nombre_tabla,
+                        conn = conn
+                      )
+                    
+                  })
+              },
+              error = function(e) {
+                print(e)
+                showNotification(
+                  ui = "Error subiendo la base de datos.",
+                  type = "error",
+                  session = session
+                )
+              }
+            )
+          } else {
+            showNotification(
+              type = "warning",
+              ui = "Almacenamiento lleno."
             )
           }
           opciones_nube$resultados_subidas <- NULL
