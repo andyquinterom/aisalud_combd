@@ -112,7 +112,12 @@ prepara_server <- function(id, opciones, validar_fecha = FALSE) {
                 round(runif(1, 100, 999), 0))
               
               opciones$data_original <- opciones$data_original %>% 
-                rename_with(tolower)
+                rename_with(tolower) %>% 
+                rename_with(.fn = function(x) {
+                  x %>% 
+                    stri_trans_general(id = "Latin-ASCII") %>% 
+                    str_replace_all("\\s", "_")
+                })
               
               
             }
