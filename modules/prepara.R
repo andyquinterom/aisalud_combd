@@ -3,41 +3,80 @@ prepara_ui <- function(id) {
   ns <- NS(id)
   
   tagList(
-    fileInput(
-      inputId = ns("file"),
-      label = "", 
-      buttonLabel = "Subir archivo",
-      placeholder = "Ningún archivo"),
-    radioButtons(
-      inputId = ns("file_type"),
-      label = "Tipo de archivo",
-      inline = TRUE, 
-      choices = c("csv", "feather")),
-    fluidRow(
-      column(width = 6, actionButton(
-        inputId = ns("file_options_open"),
-        label = "Opciones", 
-        width = "100%")),
-      column(width = 6, actionButton(
-        inputId = ns("file_load"), 
-        label = "Aplicar", 
-        width = "100%")),
-      column(width = 12, 
-             tags$br(),
-             actionButton(ns("undo"), "undo"),
-             div(verbatimTextOutput(ns("logs")),
-                 class = "error_logs"))
+    tabsetPanel(
+      tabPanel(
+        title = "Seleccionar datos",
+        tags$br(),
+        selectInput(
+          inputId = ns("nube_tablas"), 
+          label = "Tabla", 
+          choices = "Ninguno", 
+          width = "100%"
+        ),
+        tags$br(),
+        actionButton(ns("undo"), "undo"),
+        div(verbatimTextOutput(ns("logs")),
+             class = "error_logs")
+      ),
+      tabPanel(
+        title = "Subir datos",
+        fileInput(
+          inputId = ns("file"),
+          label = "", 
+          buttonLabel = "Subir archivo",
+          placeholder = "Ningún archivo"),
+        radioButtons(
+          inputId = ns("file_type"),
+          label = "Tipo de archivo",
+          inline = TRUE, 
+          choices = c("csv", "feather")),
+        fluidRow(
+          column(width = 6, actionButton(
+            inputId = ns("file_options_open"),
+            label = "Opciones", 
+            width = "100%")),
+          column(width = 6, actionButton(
+            inputId = ns("file_load"), 
+            label = "Aplicar", 
+            width = "100%")))
+      )
     )
-    )
+  )
 }
 
-prepara_server <- function(id, opciones, validar_fecha = FALSE) {
+prepara_server <- function(id, opciones, validar_fecha = FALSE, prefix = "ais_") {
   
   ns <- NS(id)
   
   moduleServer(
     id = id,
     module = function(input, output, session) {
+      
+      observe({
+        tablas_query <- dbListTables(conn = conn) %>%
+          unlist() %>%
+          unname()
+        
+        tablas <- tablas_query[str_starts(
+          string = tablas_query, paste(
+            paste0("temporal_", prefix), prefix, sep = "|"
+          ))]
+        
+        if (identical(character(0), tablas)) {
+          tablas <- NULL
+          updateSelectizeInput(
+            session = session,
+            inputId = "nube_tablas",
+            choices = "Ninguno"
+          )
+        } else {
+          updateSelectizeInput(
+            session = session,
+            inputId = "nube_tablas",
+            choices = c("Ninguno", tablas)
+          )
+        }
+      })
       
       opciones_prepara <- reactiveValues(
         "value_decimal" = ".",
@@ -107,8 +146,8 @@ prepara_server <- function(id, opciones, validar_fecha = FALSE) {
               }
               
               opciones$nombre_tabla <- paste(
-                sep = "_",
-                "temporal", file_name,
+                sep = "",
+               "temporal_", prefix, file_name,
                 round(runif(1, 100, 999), 0))
               
               opciones$data_original <- opciones$data_original %>% 
@@ -173,16 +212,47 @@ prepara_server <- function(id, opciones, validar_fecha = FALSE) {
                 value = opciones$data_original,
                 temporary = TRUE)
               
-              opciones$tabla_original <- tbl(conn, opciones$nombre_tabla)
+              tablas_query <- dbListTables(conn = conn) %>%
+                unlist() %>%
+                unname()
               
-              opciones$tabla <- opciones$tabla_original
+              tablas <- tablas_query[str_starts(
+                string = tablas_query, paste(
+                  paste0("temporal_", prefix), prefix, sep = "|"
+                ))] 
               
-              opciones$cambios <- list()
+              if (identical(character(0), tablas)) {
+                tablas <- NULL
+                updateSelectizeInput(
+                  session = session,
+                  inputId = "nube_tablas",
+                  choices = "Ninguno"
+                )
+              } else {
+                updateSelectizeInput(
+                  session = session,
+                  inputId = "nube_tablas",
+                  selected = opciones$nombre_tabla,
+                  choices = c("Ninguno", tablas)
+                )
+              }
               
               opciones$data_original <- NULL
               gc(full = TRUE)
             })
           }
+        }
+      })
+      
+      observeEvent(input$nube_tablas, {
+        if (input$nube_tablas != "Ninguno") {
+          
+          opciones$tabla_original <- tbl(conn, input$nube_tablas)
+          
+          opciones$tabla <- opciones$tabla_original
+          
+          opciones$cambios <- list()
+          
         }
       })
       
@@ -218,7 +288,19 @@ prepara_server <- function(id, opciones, validar_fecha = FALSE) {
       })
       
       observe({
-        opciones$tabla <- map_func(opciones$tabla_original, opciones$cambios)
+        tryCatch(
+          expr = {
+            opciones$tabla <- map_func(opciones$tabla_original, opciones$cambios)
+          },
+          error = function(e) {
+            print(e)
+            showNotification(
+              ui = "No se trabajar con la tabla seleccionada. Valide que aun exista.",
+              type = "error",
+              session = session
+            )
+          }
+        )
       })
      
       output$logs <- renderText({

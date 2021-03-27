@@ -23,7 +23,8 @@ shinyServer(function(input, output, session) {
   
   prepara_server(
     id = "cargar_agrupadores",
-    opciones = opciones_agrupadores
+    opciones = opciones_agrupadores,
+    prefix = "agrupador_"
   )
   
   columnas_server(

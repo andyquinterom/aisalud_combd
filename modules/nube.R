@@ -122,7 +122,7 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
           columna_valor <- input$subir_tabla_valor_columna
           columna_cantidad <- input$subir_tabla_cantidad
           
-          fecha_incluida <- "Date" %in% opciones$col_types[["fecha_prestacion"]]
+          fecha_incluida <- "Date" %in% opciones$coltypes[["fecha_prestacion"]]
           
           removeModal(session = session)
           

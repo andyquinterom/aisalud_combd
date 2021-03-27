@@ -68,16 +68,29 @@ columnas_server <- function(id, opciones) {
       
       observe({
         if (!is.null(opciones$tabla_original)) {
-          opciones$colnames <- opciones$tabla %>% 
-            colnames()
-          
-          opciones$coltypes <- opciones$tabla %>% 
-            head(0) %>% 
-            collect() %>% 
-            summarise_all(class)
-          
-          columnas$tabla <- data.frame(
-            "Columnas" = as.character(opciones$colnames))
+          tryCatch(
+            expr = {
+              opciones$colnames <- opciones$tabla %>% 
+                colnames()
+              
+              opciones$coltypes <- opciones$tabla %>% 
+                head(0) %>% 
+                collect() %>% 
+                summarise_all(class)
+              
+              columnas$tabla <- data.frame(
+                "Columnas" = as.character(opciones$colnames))
+            },
+            error = function(e) {
+              print(e)
+              sendSweetAlert(
+                session = session,
+                title = "Error",
+                text = "Valide que la tabla aun exista.",
+                type = "error"
+              )
+            }
+          )
           
         }
       })

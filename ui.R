@@ -14,10 +14,12 @@ shinyUI(function(request) {tagList(
         tabsetPanel(
           tabPanel(
             "Datos",
+            tags$br(),
             prepara_ui("cargar_datos")
           ),
           tabPanel(
             "Agrupadores",
+            tags$br(),
             prepara_ui("cargar_agrupadores")
           ),
           # tabPanel(
