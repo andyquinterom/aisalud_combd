@@ -110,20 +110,35 @@ columnas_server <- function(id, opciones) {
 
       observeEvent(input$columnas_cell_edit, {
         
-        columna_cambio <- input$columnas_cell_edit$row
-        viejo_nombre <- opciones$colnames[columna_cambio]
-        nuevo_nombre <- input$columnas_cell_edit$value
-        n_cambios <- length(opciones$cambios) + 1
-        
-        if (nchar(nuevo_nombre) == 0) {
-          nombre_cambio <- paste(n_cambios, "-", "eliminar", viejo_nombre)
-          opciones$cambios[[nombre_cambio]] <- 
-            function(x) {select(x, -c(columna_cambio))}
-        } else {
-          nombre_cambio <- paste(n_cambios, "-", viejo_nombre, "a", nuevo_nombre)
-          opciones$cambios[[nombre_cambio]] <- 
-            function(x) {rename(x, !!nuevo_nombre := columna_cambio)}
-        }
+        tryCatch(
+          expr = {
+            columna_cambio <- input$columnas_cell_edit$row
+            viejo_nombre <- opciones$colnames[columna_cambio]
+            nuevo_nombre <- input$columnas_cell_edit$value %>% 
+              stri_trans_general(id = "Latin-ASCII") %>% 
+              str_replace_all("\\s", "_")
+            n_cambios <- length(opciones$cambios) + 1
+            
+            if (nchar(nuevo_nombre) == 0) {
+              nombre_cambio <- paste(n_cambios, "-", "eliminar", viejo_nombre)
+              opciones$cambios[[nombre_cambio]] <- 
+                function(x) {select(x, -c(columna_cambio))}
+            } else {
+              nombre_cambio <- paste(n_cambios, "-", viejo_nombre, "a", nuevo_nombre)
+              opciones$cambios[[nombre_cambio]] <- 
+                function(x) {rename(x, !!nuevo_nombre := columna_cambio)}
+            }
+          },
+          error = function(e) {
+            print(e)
+            sendSweetAlert(
+              session = session,
+              title = "Error",
+              text = e[1],
+              type = "error"
+            )
+          }
+        )
         
       })
 
