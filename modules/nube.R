@@ -122,9 +122,12 @@ nube_server <- function(id, opciones, opciones_agrupador) {
           columna_valor <- input$subir_tabla_valor_columna
           columna_cantidad <- input$subir_tabla_cantidad
           
+          fecha_incluida <- "Date" %in% opciones$col_types[["fecha_prestacion"]]
+          
           removeModal(session = session)
           
-          if (opciones_nube$almacenamiento < opciones_nube$almacenamiento_total) {
+          if (opciones_nube$almacenamiento < opciones_nube$almacenamiento_total &&
+              fecha_incluida) {
             nombre_tabla <- paste0("ais_", tolower(input$subir_tabla_nombre))
             tryCatch(
               expr = {
@@ -181,6 +184,11 @@ nube_server <- function(id, opciones, opciones_agrupador) {
                   session = session
                 )
               }
+            )
+          } else {
+            showNotification(
+              type = "warning",
+              ui = "Columna de fecha invalida o almacenamiento lleno."
             )
           }
           opciones_nube$resultados_subidas <- NULL
