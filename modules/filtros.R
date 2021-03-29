@@ -77,6 +77,14 @@ filtros_server <- function(id, opciones) {
                   count() %>% 
                   pull(!!rlang::sym(columna_selected))
               )
+            } else {
+              updateSelectizeInput(
+                session = session,
+                inputId = paste0("filtro_char_valor_", i),
+                server = TRUE,
+                choices = "Ninguno",
+                selected = "Ninguno"
+              )
             }
           
           })
