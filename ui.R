@@ -41,13 +41,13 @@ shinyUI(function(request) {tagList(
           tabPanel(title = "Agrupadores",
                    tags$br(),
                    agrupadores_ui("agrupadores"),
-                   columnas_ui("agrupadores_columnas"))
-          # tabPanel(title = "Filtros",
-          #          fluidRow(
-          #            column(width = 12,
-          #                   filtros_ui("filtros")
-          #                   )
-          #          )),
+                   columnas_ui("agrupadores_columnas")),
+          tabPanel(title = "Filtros",
+                   fluidRow(
+                     column(width = 12,
+                            filtros_ui("filtros")
+                            )
+                   ))
           # tabPanel(title = "Otras funciones",
           #          fluidRow(
           #            column(width = 12,

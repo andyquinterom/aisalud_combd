@@ -21,13 +21,12 @@ filtros_ui <- function(id) {
         class = "filtros_char",
           filtro_discreto_ui_insert(ns = ns, n = 5)
         ),
-      filtro_numerico_ui_insert(ns = ns, n = 3),
       actionButton(ns("aplicar_filtros"), "Aplicar")
     )
   )
 }
 
-filtros_server <- function(input, output, session, datos) {
+filtros_server <- function(input, output, session, opciones) {
 
   n_num = 3
   n_char = 5
@@ -37,204 +36,83 @@ filtros_server <- function(input, output, session, datos) {
     "char" = rep("Ninguno", n_char)
   )
   
-  observeEvent(datos$colnames, {
-    lapply(
-      X = 1:n_char,
-      FUN = function(x) {
-        updatePickerInput(
-          session = session,
-          inputId = paste("filtro_char_columna", x, sep = "_"),
-          choices = c("Ninguno", datos$colnames),
-          selected = ifelse(
-            test = selected_cache$char[x] %in% c("Ninguno", datos$colnames),
-            yes = selected_cache$char[x],
-            no = {selected_cache$char[x] <- "Ninguno"
-            "Ninguno"})
-        )
-      }
-    )
-    lapply(
-      X = 1:n_num,
-      FUN = function(x) {
-        updatePickerInput(
-          session = session,
-          inputId = paste("filtro_num_columna", x, sep = "_"),
-          choices = c("Ninguno", datos$colnames_num),
-          selected = ifelse(
-            test = selected_cache$num[x] %in% c("Ninguno", datos$colnames_num),
-            yes = selected_cache$num[x],
-            no = {selected_cache$num[x] <- "Ninguno"
-            "Ninguno"})
-        )
-      }
-    )
+  observeEvent(opciones$colnames, {
+    if (!is.null(opciones$colnames)) {
+      lapply(
+        X = 1:n_char,
+        FUN = function(x) {
+          updateSelectizeInput(
+            session = session,
+            inputId = paste("filtro_char_columna", x, sep = "_"),
+            choices = c("Ninguno", opciones$colnames),
+            selected = ifelse(
+              test = selected_cache$char[x] %in% c("Ninguno", opciones$colnames),
+              yes = selected_cache$char[x],
+              no = {selected_cache$char[x] <- "Ninguno"
+              "Ninguno"})
+          )
+        }
+      )
+    }
   })
   
   lapply(
     X = 1:n_char,
     FUN = function(i) {
       observeEvent(input[[paste0("filtro_char_columna_", i)]], {
-        updateSelectizeInput(
-          session = session,
-          inputId = paste0("filtro_char_valor_", i),
-          server = TRUE,
-          choices = datos$valores_unicos[[
-            input[[paste0("filtro_char_columna_", i)]]]]
-        )
+        columna_selected <- input[[paste0("filtro_char_columna_", i)]]
+        
+        if (!any(c("", "Ninguno") %in% columna_selected)) {
+          updateSelectizeInput(
+            session = session,
+            inputId = paste0("filtro_char_valor_", i),
+            server = TRUE,
+            choices = opciones$tabla %>%
+              group_by(!!rlang::sym(columna_selected)) %>%
+              count() %>% 
+              pull(!!rlang::sym(columna_selected))
+          )
+        }
+      
       })
     }
   )
-  
-  lapply(
-    X = 1:n_num,
-    FUN = function(i) {
-      observeEvent(input[[paste0("filtro_num_columna_", i)]], {
-        if (input[[paste0("filtro_num_columna_", i)]] != "Ninguno") {
-          updateNumericInput(
-            session = session,
-            inputId = paste0("filtro_num_min_", i),
-            value = min(
-              datos$data_original[[
-                input[[paste0("filtro_num_columna_", i)]]
-                ]],
-              na.rm = TRUE)
-          )
-          updateNumericInput(
-            session = session,
-            inputId = paste0("filtro_num_max_", i),
-            value = max(
-              datos$data_original[[
-                input[[paste0("filtro_num_columna_", i)]]
-              ]],
-              na.rm = TRUE)
-          )
-        }
-      })
-    }
-  )
-  
-  lapply(
-    X = 1:n_num,
-    FUN = function(i) {
-      observeEvent(input[[paste0("filtro_num_min_", i)]], {
-        if (is.na(input[[paste0("filtro_num_min_", i)]]) &
-            input[[paste0("filtro_num_columna_", i)]] != "Ninguno") {
-          updateNumericInput(
-            session = session,
-            inputId = paste0("filtro_num_min_", i),
-            value = min(
-              datos$data_original[[
-                input[[paste0("filtro_num_columna_", i)]]
-              ]],
-              na.rm = TRUE)
-          )
-        }
-      })
-      observeEvent(input[[paste0("filtro_num_max_", i)]], {
-        if (is.na(input[[paste0("filtro_num_max_", i)]]) &
-            input[[paste0("filtro_num_columna_", i)]] != "Ninguno") {
-          updateNumericInput(
-            session = session,
-            inputId = paste0("filtro_num_max_", i),
-            value = max(
-              datos$data_original[[
-                input[[paste0("filtro_num_columna_", i)]]
-              ]],
-              na.rm = TRUE)
-          )
-        }
-      })
-    }
-  )
-  
+
   observeEvent(input$aplicar_filtros, {
-    
+
     inputs_filtros_char <- c()
-    
-    inputs_filtros_char <- unlist(
-      lapply(
-        X = 1:n_char,
-        FUN = function(i) {
-          selected_cache$char[i] <- input[[paste0("filtro_char_columna_", i)]]
-          return(input[[paste0("filtro_char_columna_", i)]] != "Ninguno")
+
+    lapply(
+      X = 1:n_char,
+      FUN = function(i) {
+        selected_cache$char[i] <- input[[paste0("filtro_char_columna_", i)]]
+        
+        if (!any(c("Ninguno", "") %in% 
+                input[[paste0("filtro_char_columna_", i)]])) {
+          
+          n_cambios <- length(opciones$cambios) + 1
+          columna_filtro <- input[[paste0("filtro_char_columna_", i)]]
+          columna_filtro_val <- input[[paste0("filtro_char_valor_", i)]]
+          columna_filtro_incluir <- input[[paste0("filtro_char_incluir_", i)]]
+          nombre_filtro <- paste(
+            n_cambios, "-", 
+            "Filtro de",
+            ifelse(test = columna_filtro_incluir,
+                   yes = "inclusion", no = "exclusion"),
+            "en", columna_filtro)
+          
+          opciones$cambios[[nombre_filtro]] <- 
+            function(x) {
+              if (columna_filtro_incluir) {
+                filter(x, !!as.name(columna_filtro) %in% columna_filtro_val)
+              } else {
+                filter(x, !(!!as.name(columna_filtro) %in% columna_filtro_val))
+              }
+            }
         }
-      )
-    )
-    
-    inputs_filtros_char_arguments <- paste(unlist(
-      lapply(
-        X = (1:n_char)[inputs_filtros_char],
-        FUN = function(i) {
-          return(
-            paste0(
-              "[get(",
-              paste0("input$filtro_char_columna_", i),
-              ifelse(
-                test = input[[paste0("filtro_char_incluir_", i)]],
-                yes = ") %in% ",
-                no = ") %notin% "
-              ),
-              paste0("input$filtro_char_valor_", i),
-              "]"
-            )
-          )
-        }
-      )
-    ),
-    collapse = "")
-    
-    inputs_filtros_num <- unlist(
-      lapply(
-        X = 1:n_char,
-        FUN = function(i) {
-          input[[paste0("filtro_num_columna_", i)]]
-          return(input[[paste0("filtro_num_columna_", i)]] != "Ninguno")
-        }
-      )
-    )
-    
-    inputs_filtros_num_arguments <- paste(unlist(
-      lapply(
-        X = (1:n_num)[inputs_filtros_num],
-        FUN = function(i) {
-          return(
-            paste0(
-              "[get(",
-              paste0("input$filtro_num_columna_", i),
-              ") >= ",
-              paste0("input$filtro_num_min_", i),
-              " & get(",
-              paste0("input$filtro_num_columna_", i),
-              ") <= ",
-              paste0("input$filtro_num_max_", i),
-              "]"
-            )
-          )
-        }
-      )
-    ),
-    collapse = "")
-    
-    filtros_parse <- paste0(
-      "datos$data_table",
-      inputs_filtros_char_arguments,
-      inputs_filtros_num_arguments
+      }
     )
 
-
-    datos$data_table <- copy(datos$data_original)
-    datos$data_table <- eval(parse(
-      text = filtros_parse
-    ))
-    
-    datos$filtros_aplicados <- NULL
-    datos$filtros_aplicados <- TRUE
-    
-    showNotification(
-      ui = "Filtros aplicados.",
-      duration = 4
-    )
-    
   })
   
 }
@@ -246,7 +124,7 @@ filtro_discreto_ui_fila <- function(ns, position = 1) {
   fluidRow(
     column(
       width = 5,
-      pickerInput(
+      selectizeInput(
         inputId = ns(paste("filtro_char_columna", position, sep = "_")),
         label = NULL,
         choices = "Ninguno",
