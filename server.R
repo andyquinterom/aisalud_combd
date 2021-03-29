@@ -63,11 +63,7 @@ shinyServer(function(input, output, session) {
 
   # # Modulo de filtros
   # 
-  callModule(
-    module = filtros_server,
-    id = "filtros",
-    opciones = opciones
-  )
+  filtros_server(id = "filtros", opciones = opciones)
   # 
   # # Modulo de descargas
   # 

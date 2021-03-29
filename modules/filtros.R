@@ -26,99 +26,106 @@ filtros_ui <- function(id) {
   )
 }
 
-filtros_server <- function(input, output, session, opciones) {
+filtros_server <- function(id, opciones) {
+  
+  
+  moduleServer(
+    id = id,
+    module = function(input, output, session) {
 
-  n_num = 3
-  n_char = 5
-  
-  selected_cache <- reactiveValues(
-    "num" = rep("Ninguno", n_num),
-    "char" = rep("Ninguno", n_char)
-  )
-  
-  observeEvent(opciones$colnames, {
-    if (!is.null(opciones$colnames)) {
+      n_num = 3
+      n_char = 5
+      
+      selected_cache <- reactiveValues(
+        "num" = rep("Ninguno", n_num),
+        "char" = rep("Ninguno", n_char)
+      )
+      
+      observeEvent(opciones$colnames, {
+        if (!is.null(opciones$colnames)) {
+          lapply(
+            X = 1:n_char,
+            FUN = function(x) {
+              updateSelectizeInput(
+                session = session,
+                inputId = paste("filtro_char_columna", x, sep = "_"),
+                choices = c("Ninguno", opciones$colnames),
+                selected = ifelse(
+                  test = selected_cache$char[x] %in% c("Ninguno", opciones$colnames),
+                  yes = selected_cache$char[x],
+                  no = {selected_cache$char[x] <- "Ninguno"
+                  "Ninguno"})
+              )
+            }
+          )
+        }
+      })
+      
       lapply(
         X = 1:n_char,
-        FUN = function(x) {
-          updateSelectizeInput(
-            session = session,
-            inputId = paste("filtro_char_columna", x, sep = "_"),
-            choices = c("Ninguno", opciones$colnames),
-            selected = ifelse(
-              test = selected_cache$char[x] %in% c("Ninguno", opciones$colnames),
-              yes = selected_cache$char[x],
-              no = {selected_cache$char[x] <- "Ninguno"
-              "Ninguno"})
-          )
+        FUN = function(i) {
+          observeEvent(input[[paste0("filtro_char_columna_", i)]], {
+            columna_selected <- input[[paste0("filtro_char_columna_", i)]]
+            
+            if (!any(c("", "Ninguno") %in% columna_selected)) {
+              updateSelectizeInput(
+                session = session,
+                inputId = paste0("filtro_char_valor_", i),
+                server = TRUE,
+                choices = opciones$tabla %>%
+                  group_by(!!rlang::sym(columna_selected)) %>%
+                  count() %>% 
+                  pull(!!rlang::sym(columna_selected))
+              )
+            }
+          
+          })
         }
       )
-    }
-  })
-  
-  lapply(
-    X = 1:n_char,
-    FUN = function(i) {
-      observeEvent(input[[paste0("filtro_char_columna_", i)]], {
-        columna_selected <- input[[paste0("filtro_char_columna_", i)]]
-        
-        if (!any(c("", "Ninguno") %in% columna_selected)) {
-          updateSelectizeInput(
-            session = session,
-            inputId = paste0("filtro_char_valor_", i),
-            server = TRUE,
-            choices = opciones$tabla %>%
-              group_by(!!rlang::sym(columna_selected)) %>%
-              count() %>% 
-              pull(!!rlang::sym(columna_selected))
-          )
-        }
-      
-      })
-    }
-  )
-
-  observeEvent(input$aplicar_filtros, {
-
-    inputs_filtros_char <- c()
-
-    lapply(
-      X = 1:n_char,
-      FUN = function(i) {
-        selected_cache$char[i] <- input[[paste0("filtro_char_columna_", i)]]
-        
-        if (!any(c("Ninguno", "") %in% 
-                input[[paste0("filtro_char_columna_", i)]])) {
-          
-          n_cambios <- length(opciones$cambios) + 1
-          columna_filtro <- input[[paste0("filtro_char_columna_", i)]]
-          columna_filtro_val <- input[[paste0("filtro_char_valor_", i)]]
-          columna_filtro_incluir <- input[[paste0("filtro_char_incluir_", i)]]
-          nombre_filtro <- paste(
-            n_cambios, "-", 
-            "Filtro de",
-            ifelse(test = columna_filtro_incluir,
-                   yes = "inclusion", no = "exclusion"),
-            "en", columna_filtro)
-          
-          opciones$cambios[[nombre_filtro]] <- 
-            function(x) {
-              if (columna_filtro_incluir) {
-                filter(x, !!as.name(columna_filtro) %in% columna_filtro_val)
-              } else {
-                filter(x, !(!!as.name(columna_filtro) %in% columna_filtro_val))
-              }
+    
+      observeEvent(input$aplicar_filtros, {
+    
+        inputs_filtros_char <- c()
+    
+        lapply(
+          X = 1:n_char,
+          FUN = function(i) {
+            selected_cache$char[i] <- input[[paste0("filtro_char_columna_", i)]]
+            
+            if (!any(c("Ninguno", "") %in% 
+                    input[[paste0("filtro_char_columna_", i)]])) {
+              
+              n_cambios <- length(opciones$cambios) + 1
+              columna_filtro <- input[[paste0("filtro_char_columna_", i)]]
+              columna_filtro_val <- input[[paste0("filtro_char_valor_", i)]]
+              columna_filtro_incluir <- input[[paste0("filtro_char_incluir_", i)]]
+              nombre_filtro <- paste(
+                n_cambios, "-", 
+                "Filtro de",
+                ifelse(test = columna_filtro_incluir,
+                       yes = "inclusion", no = "exclusion"),
+                "en", columna_filtro)
+              
+              opciones$cambios[[nombre_filtro]] <- 
+                function(x) {
+                  if (columna_filtro_incluir) {
+                    filter(x, !!as.name(columna_filtro) %in% columna_filtro_val)
+                  } else {
+                    filter(x, !(!!as.name(columna_filtro) %in% columna_filtro_val))
+                  }
+                }
             }
-        }
-      }
-    )
-
-  })
-  
+          }
+        )
+    
+      })
+      
+    }
+    
+   
+  )
 }
 
-
-# Funciones ----------------
 
 filtro_discreto_ui_fila <- function(ns, position = 1) {
   fluidRow(
