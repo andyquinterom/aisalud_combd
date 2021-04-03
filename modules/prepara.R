@@ -315,6 +315,28 @@ prepara_server <- function(id, opciones, validar_fecha = FALSE, prefix = "ais_")
         n_cambios <- length(opciones$cambios)
         opciones$cambios <- opciones$cambios[-n_cambios]
       })
+      
+      observeEvent(input$export_sql, {
+        if (!is.null(opciones$tabla)) {
+          showModal(
+            ui = modalDialog(
+              easyClose = TRUE, 
+              footer = NULL,
+              shinyAce::aceEditor(
+                ns("export_sql_ace"),
+                value = opciones$tabla %>% dbplyr::sql_render() %>% str_remove("<SQL>"), 
+                mode = "pgsql", 
+                wordWrap = TRUE
+              )
+            )
+          )
+        } else {
+          showNotification(
+            ui = "No hay una tabla seleccionada",
+            type = "warning"
+          )
+        }
+      })
        
     }
   )

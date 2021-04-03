@@ -18,6 +18,7 @@ library(batchtools)
 library(lubridate)
 library(parallel)
 library(shinycssloaders)
+library(shinyAce)
 unlink(".RData")
 
 for (i in paste0("modules/", list.files("modules/"))) {
