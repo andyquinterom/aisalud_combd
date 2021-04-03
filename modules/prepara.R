@@ -14,7 +14,11 @@ prepara_ui <- function(id) {
           width = "100%"
         ),
         tags$br(),
-        actionButton(ns("undo"), "undo"),
+        actionGroupButtons(
+          inputIds = ns(c("undo", "export_sql")),
+          labels = c("Undo", "Exportar SQL"), 
+          fullwidth = TRUE
+        ),
         div(verbatimTextOutput(ns("logs")),
              class = "error_logs")
       ),
