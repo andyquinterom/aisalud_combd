@@ -159,7 +159,8 @@ prepara_server <- function(id, opciones, validar_fecha = FALSE, prefix = "ais_")
                 rename_with(.fn = function(x) {
                   x %>% 
                     stri_trans_general(id = "Latin-ASCII") %>% 
-                    str_replace_all("\\s", "_")
+                    str_replace_all("\\s", "_") %>% 
+                    str_replace_all('[^0-9a-zA-Z]+', "_")
                 })
               
               

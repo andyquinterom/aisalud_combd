@@ -129,7 +129,8 @@ columnas_server <- function(id, opciones) {
             viejo_nombre <- opciones$colnames[columna_cambio]
             nuevo_nombre <- input$columnas_cell_edit$value %>% 
               stri_trans_general(id = "Latin-ASCII") %>% 
-              str_replace_all("\\s", "_")
+              str_replace_all("\\s", "_") %>% 
+              str_replace_all('[^0-9a-zA-Z]+', "_")
             n_cambios <- length(opciones$cambios) + 1
             
             if (nchar(nuevo_nombre) == 0) {

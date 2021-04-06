@@ -87,7 +87,7 @@ agrupadores_server <- function(id, opciones, opciones_agrupadores) {
               tabla_temp_agrupadores <- opciones_agrupadores$tabla %>% 
                 select(!!!rlang::syms(c(llave_primaria, agrupadores)))
               
-              coltypes <- opciones$coltypes
+              coltypes_agrupador <- opciones_agrupadores$coltypes
               
               llave_primaria_named <- llave_primaria
               names(llave_primaria_named) <- llave_foranea
@@ -101,9 +101,9 @@ agrupadores_server <- function(id, opciones, opciones_agrupadores) {
               agrupadores_char <- purrr::map(
                 .x = agrupadores,
                 .f = function(y) {
-                  tipo_columna <- coltypes[[y]]
+                  tipo_columna <- coltypes_agrupador[[y]]
                   print(tipo_columna)
-                  if (tipo_columna == "character") {
+                  if (identical(tipo_columna, "character")) {
                     return(y)
                   } else {
                     return(NULL)
