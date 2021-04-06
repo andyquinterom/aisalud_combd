@@ -32,7 +32,7 @@ set_utf8 <- function(x) {
   x
 }
 
-lazy_to_postgres <- function(datos, nombre, conn, schema = "public") {
+lazy_to_postgres <- function(datos, nombre, conn) {
   query <- paste0(
       'SELECT * 
       INTO #tabla#

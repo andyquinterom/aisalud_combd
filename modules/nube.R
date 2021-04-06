@@ -40,9 +40,10 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
           opciones_nube$almacenamiento <- check_db_size(
             con = conn,
             database = Sys.getenv("DATABASE_NAME")
-          ) %>% ifelse(is.null(.),
-                       yes = 0,
-                       no = .)
+          ) %>% 
+            ifelse(is.null(.),
+              yes = 0,
+              no = .)
           
           opciones_nube$almacenamiento_total <- Sys.getenv("DATABASE_MAX_STORAGE") %>%
             as.numeric()
@@ -142,9 +143,9 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
                         nro_identificacion = !!as.name(columna_nro_identificacion)) %>% 
                       mutate(
                         valor = as.numeric(valor),
-                        cantidad = as.numeric(cantidad)) %>% 
-                      mutate(ais_mes = month(fecha_prestacion),
-                             ais_anio = year(fecha_prestacion)) %>% 
+                        cantidad = as.numeric(cantidad),
+                        ais_mes = month(fecha_prestacion),
+                        ais_anio = year(fecha_prestacion)) %>% 
                       lazy_to_postgres(
                         nombre = nombre_tabla,
                         conn = conn
