@@ -2,6 +2,7 @@ library(data.table)
 library(feather)
 library(readr)
 library(stringr)
+library(stringi)
 library(shiny)
 library(DT)
 library(shinyWidgets)
@@ -17,6 +18,7 @@ library(batchtools)
 library(lubridate)
 library(parallel)
 library(shinycssloaders)
+library(shinyAce)
 unlink(".RData")
 
 for (i in paste0("modules/", list.files("modules/"))) {
@@ -29,9 +31,7 @@ for (i in paste0("R/", list.files("R/"))) {
 
 options(shiny.maxRequestSize = 100 * 1024 ^ 3)
 
-print(Sys.getenv("DATABASE_SCHEMA"))
-
-base_de_datos_con <- dbConnect(
+conn <- dbConnect(
   RPostgres::Postgres(),
   dbname = Sys.getenv("DATABASE_NAME"),
   user = Sys.getenv("DATABASE_USER"),
@@ -40,8 +40,6 @@ base_de_datos_con <- dbConnect(
   port = Sys.getenv("DATABASE_PORT"),
   sslmode = "require")
 
-print(dbGetQuery(
-  base_de_datos_con,
-  "SHOW client_encoding;"
-))
-
+onStop(function() {
+  dbDisconnect(conn = conn)
+})

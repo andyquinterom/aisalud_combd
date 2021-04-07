@@ -3,303 +3,344 @@ prepara_ui <- function(id) {
   ns <- NS(id)
   
   tagList(
-    fileInput(
-      inputId = ns("file"),
-      label = "", 
-      buttonLabel = "Subir archivo",
-      placeholder = "Ningún archivo"),
-    radioButtons(
-      inputId = ns("file_type"),
-      label = "Tipo de archivo",
-      inline = TRUE, 
-      choices = c("csv", "feather", "datos didacticos", "RIPS")),
-    fluidRow(
-      column(width = 6, actionButton(
-        inputId = ns("file_options_open"),
-        label = "Opciones", 
-        width = "100%")),
-      column(width = 6, actionButton(
-        inputId = ns("file_load"), 
-        label = "Aplicar", 
-        width = "100%")),
-      column(width = 12, 
-             tags$br(),
-             div(verbatimTextOutput(ns("logs")),
-                 class = "error_logs"))
-    )
-    )
-}
-
-prepara_server <- function(input, output, session, nombre_id) {
-  
-  id <- nombre_id
-  ns <- NS(id)
-  
-  opciones_prepara <- reactiveValues(
-    "value_decimal" = ".",
-    "value_delimitador" = ",",
-    "value_sheet" = NULL,
-    "value_range" = NULL
-  )
-  
-  datos <- reactiveValues(
-    "data_table" = data.table(),
-    "data_original" = data.table(),
-    "colnames" = NULL
-  )
-  
-  observeEvent(input$file_options_open, {
-    showModal(
-      session = session,
-      ui = modalDialog(
-        title = "Opciones archivo",
-        easyClose = TRUE,
-        fade = TRUE,
-        datos_opciones_ui(
-          id = id,
-          file_type = input$file_type,
-          value_decimal = opciones_prepara$value_decimal,
-          value_delimitador = opciones_prepara$value_delimitador,
-          value_range = opciones_prepara$value_range,
-          value_sheet = opciones_prepara$value_sheet,
-          value_file = opciones_prepara$value_file),
-        footer = actionButton(
-          inputId = ns("datos_opciones_guardar"),
-          label = "Guardar")
+    tabsetPanel(
+      tabPanel(
+        title = "Seleccionar datos",
+        tags$br(),
+        selectInput(
+          inputId = ns("nube_tablas"), 
+          label = "Tabla", 
+          choices = "Ninguno", 
+          width = "100%"
+        ),
+        tags$br(),
+        actionGroupButtons(
+          inputIds = ns(c("undo", "export_sql")),
+          labels = c("Undo", "Exportar SQL"), 
+          fullwidth = TRUE
+        ),
+        div(verbatimTextOutput(ns("logs")),
+             class = "error_logs")
+      ),
+      tabPanel(
+        title = "Subir datos",
+        fileInput(
+          inputId = ns("file"),
+          label = "", 
+          buttonLabel = "Subir archivo",
+          placeholder = "Ningún archivo"),
+        radioButtons(
+          inputId = ns("file_type"),
+          label = "Tipo de archivo",
+          inline = TRUE, 
+          choices = c("csv", "feather")),
+        fluidRow(
+          column(width = 6, actionButton(
+            inputId = ns("file_options_open"),
+            label = "Opciones", 
+            width = "100%")),
+          column(width = 6, actionButton(
+            inputId = ns("file_load"), 
+            label = "Aplicar", 
+            width = "100%")))
       )
     )
-  })
+  )
+}
+
+prepara_server <- function(id, opciones, validar_fecha = FALSE, prefix = "ais_") {
   
-  observeEvent(input$datos_opciones_guardar, {
-    opciones_prepara$value_decimal <- input$value_decimal
-    opciones_prepara$value_delimitador <- input$value_delimitador
-    opciones_prepara$value_sheet <- input$value_sheet
-    opciones_prepara$value_range <- input$value_range
-    opciones_prepara$value_file <- input$value_file
-    removeModal(session = session)
-  })
+  ns <- NS(id)
   
-  output$logs <- renderText({
-    datos$rips[["warnings"]]
-  })
-  
-  observeEvent(input$file_load, {
-    tryCatch(
-      expr = {
-        if (input$file_type == "datos didacticos" &&
-            !is.null(opciones_prepara$value_file)) {
-          datos$file_name <- opciones_prepara$value_file
-          datos$data_original <- as.data.table(
-            read_feather(
-              path = paste0("datos/didacticos/", opciones_prepara$value_file))
+  moduleServer(
+    id = id,
+    module = function(input, output, session) {
+      
+      observe({
+        tablas_query <- dbListTables(conn = conn) %>%
+          unlist() %>%
+          unname()
+        
+        tablas <- tablas_query[str_starts(
+          string = tablas_query, paste(
+            paste0("temporal_", prefix), prefix, sep = "|"
+          ))]
+        
+        if (identical(character(0), tablas)) {
+          tablas <- NULL
+          updateSelectizeInput(
+            session = session,
+            inputId = "nube_tablas",
+            choices = "Ninguno"
           )
-          setnames(datos$data_original, tolower(colnames(datos$data_original)))
-          datos$data_table <- datos$data_original
-          datos$valores_unicos <- lapply(datos$data_table, unique)
-          datos$colnames <- colnames(datos$data_table)
-          columnas_num <- unlist(lapply(datos$data_table[1,], is.numeric))
-          datos$colnames_num <- datos$colnames[columnas_num]
+        } else {
+          updateSelectizeInput(
+            session = session,
+            inputId = "nube_tablas",
+            choices = c("Ninguno", tablas)
+          )
         }
-        if (!is.null(input$file)) {
-          if (input$file_type == "csv") {
-            datos$colnames <- NULL
-            datos$colnames_num <- NULL
-            datos$file_name <- sub(
-              ".csv$|.feather$|.txt$|.xlsx$",
-              "",
-              basename(input$file$name))
-            value_delimitador <- ifelse(
-              test = opciones_prepara$value_delimitador == "Espacios",
-              yes = "\t",
-              no = opciones_prepara$value_delimitador
-            )
-            datos$data_original <- read_delim(
-              file = input$file$datapath, 
-              delim = value_delimitador, 
-              col_types = cols(.default = col_character()),
-              locale = locale(
-                encoding = guess_encoding(input$file$datapath)[[1]][1],
-                decimal_mark = opciones_prepara$value_decimal)) %>%
-              as.data.table()
-            setnames(datos$data_original, tolower(colnames(datos$data_original)))
-            datos$data_table <- datos$data_original
-            datos$valores_unicos <- lapply(datos$data_table, unique)
-            datos$colnames <- colnames(datos$data_table)
-            columnas_num <- unlist(lapply(datos$data_table[1,], is.numeric))
-            datos$colnames_num <- datos$colnames[columnas_num]
-          } 
-          if (input$file_type == "feather") {
-            datos$colnames <- NULL
-            datos$colnames_num <- NULL
-            datos$file_name <- sub(
-              ".csv$|.feather$|.txt$|.xlsx$",
-              "",
-              basename(input$file$name))
-            datos$data_original <- as.data.table(
-              read_feather(
-                path = input$file$datapath)
-            )
-            setnames(datos$data_original, tolower(colnames(datos$data_original)))
-            datos$data_table <- datos$data_original
-            datos$valores_unicos <- lapply(datos$data_table, unique)
-            datos$colnames <- colnames(datos$data_table)
-            columnas_num <- unlist(lapply(datos$data_table[1,], is.numeric))
-            datos$colnames_num <- datos$colnames[columnas_num]
-          }
-          if (input$file_type == "RIPS") {
-            if (is.null(opciones_prepara$prestadores_unicos)) {
-              withProgress(
-                min = 0,
-                max = 1,
-                value = 0.5,
-                message = "Leyendo archivos...",
-                detail = "Puede tardar varios minutos...",
-                expr = {
-                  folder_unzip <- tempfile()
-                  dir.create(path = folder_unzip)
-                  datos$rips <- withCallingHandlers(
-                    expr = un_zip_rips(
-                      path = input$file$datapath,
-                      session = session,
-                      folder_unzip = folder_unzip),
-                    message = function(m) output$logs <- renderPrint(m$message)
-                  )
-                  print("Warnings:")
-                  print(datos$rips[["warnings"]])
-                  unlink(folder_unzip)
-                }
-              )
-              print(colnames(datos$rips$af$tabla))
-              opciones_prepara$prestadores_unicos_lista <- 
-                datos$rips[["af"]][["tabla"]][, c(
-                  "nombre_prestador", "cod_prestador")] %>%
-                unique() %>%
-                t()
-              print(opciones_prepara$prestadores_unicos_lista)
-              colnames(opciones_prepara$prestadores_unicos_lista) <- 
-                opciones_prepara$prestadores_unicos_lista[1,]
-              opciones_prepara$prestadores_unicos <- 
-                opciones_prepara$prestadores_unicos_lista[-1,]
+      })
+      
+      opciones_prepara <- reactiveValues(
+        "value_decimal" = ".",
+        "value_delimitador" = ",",
+        "value_sheet" = NULL,
+        "value_range" = NULL
+      )
+      
+      observeEvent(input$file_options_open, {
+        showModal(
+          session = session,
+          ui = modalDialog(
+            title = "Opciones archivo",
+            easyClose = TRUE,
+            fade = TRUE,
+            datos_opciones_ui(
+              id = id,
+              file_type = input$file_type,
+              value_decimal = opciones_prepara$value_decimal,
+              value_delimitador = opciones_prepara$value_delimitador,
+              value_range = opciones_prepara$value_range,
+              value_sheet = opciones_prepara$value_sheet,
+              value_file = opciones_prepara$value_file),
+            footer = actionButton(
+              inputId = ns("datos_opciones_guardar"),
+              label = "Guardar")
+          )
+        )
+      })
+      
+      observeEvent(input$datos_opciones_guardar, {
+        opciones_prepara$value_decimal <- input$value_decimal
+        opciones_prepara$value_delimitador <- input$value_delimitador
+        opciones_prepara$value_sheet <- input$value_sheet
+        opciones_prepara$value_range <- input$value_range
+        opciones_prepara$value_file <- input$value_file
+        removeModal(session = session)
+      })
+      
+      observeEvent(input$file_load, {
+        tryCatch(
+          expr = {
+            if (!is.null(input$file)) {
+              opciones$data_original <- data.frame()
+              opciones$validar_fecha <- !validar_fecha
+              file_name <- sub(
+                ".csv$|.feather$|.txt$|.xlsx$",
+                "",
+                basename(input$file$name))
+              if (input$file_type == "csv") {
+                value_delimitador <- ifelse(
+                  test = opciones_prepara$value_delimitador == "Espacios",
+                  yes = "\t",
+                  no = opciones_prepara$value_delimitador
+                )
+                opciones$data_original <- read_delim(
+                  file = input$file$datapath, 
+                  delim = value_delimitador, 
+                  col_types = cols(.default = col_character()),
+                  locale = locale(
+                    encoding = guess_encoding(input$file$datapath)[[1]][1],
+                    decimal_mark = opciones_prepara$value_decimal))
+              } 
+              if (input$file_type == "feather") {
+                opciones$data_original <- read_feather(
+                  path = input$file$datapath)
+              }
+              
+              opciones$nombre_tabla <- paste(
+                sep = "",
+               "temporal_", prefix, file_name,
+                round(runif(1, 100, 999), 0))
+              
+              opciones$data_original <- opciones$data_original %>% 
+                rename_with(tolower) %>% 
+                rename_with(.fn = function(x) {
+                  x %>% 
+                    stri_trans_general(id = "Latin-ASCII") %>% 
+                    str_replace_all("\\s", "_") %>% 
+                    str_replace_all('[^0-9a-zA-Z]+', "_")
+                })
+              
+              
             }
+          },
+          error = function(e) {
+            print(e)
+            sendSweetAlert(
+              session = session,
+              title = "Error",
+              text = e[1],
+              type = "error"
+            )
+          }
+        )
+      })
+      
+      observeEvent(opciones$data_original, {
+        if (nrow(opciones$data_original > 0)) {
+          if (!opciones$validar_fecha) {
             showModal(
               session = session,
               ui = modalDialog(
-                title = "Prestadores a consolidar.",
-                easyClose = TRUE,
-                fade = TRUE,
-                selectizeInput(
-                  choices = opciones_prepara$prestadores_unicos,
-                  inputId = ns("consolidar_rips_prestador"),
-                  label = NULL,
-                  width = "100%"
+                title = "Columna de fecha",
+                fluidRow(
+                  column(
+                    width = 4,
+                    selectInput(
+                      inputId = ns("fecha_columna"),
+                      label = "Columna de fecha:",
+                      choices = as.character(colnames(opciones$data_original)),
+                      selected = "fecha_prestacion"
+                    )
+                  ),
+                  column(
+                    width = 4,
+                    textInput(
+                      inputId = ns("fecha_formato"),
+                      label = "Formato de fecha",
+                      value = "%d/%m/%Y"
+                    )
+                  )
                 ),
                 footer = actionButton(
-                  inputId = ns("consolidar_rips_confirmar"),
-                  label = "Consolidar")
+                  inputId = ns("confirmar_fecha"),
+                  label = "Validar columna de fecha")
               )
             )
-            
+          } else {
+            withProgress(message = "Cargando datos", {
+              dbWriteTable(
+                conn = conn,
+                name = opciones$nombre_tabla,
+                value = opciones$data_original,
+                temporary = TRUE)
+              
+              tablas_query <- dbListTables(conn = conn) %>%
+                unlist() %>%
+                unname()
+              
+              tablas <- tablas_query[str_starts(
+                string = tablas_query, paste(
+                  paste0("temporal_", prefix), prefix, sep = "|"
+                ))] 
+              
+              if (identical(character(0), tablas)) {
+                tablas <- NULL
+                updateSelectizeInput(
+                  session = session,
+                  inputId = "nube_tablas",
+                  choices = "Ninguno"
+                )
+              } else {
+                updateSelectizeInput(
+                  session = session,
+                  inputId = "nube_tablas",
+                  selected = opciones$nombre_tabla,
+                  choices = c("Ninguno", tablas)
+                )
+              }
+              
+              opciones$data_original <- NULL
+              gc(full = TRUE)
+            })
           }
         }
-      },
-      error = function(e) {
-        print(e)
-        sendSweetAlert(
-          session = session,
-          title = "Error",
-          text = e[1],
-          type = "error"
+      })
+      
+      observeEvent(input$nube_tablas, {
+        if (input$nube_tablas != "Ninguno") {
+          
+          opciones$tabla_original <- tbl(conn, input$nube_tablas)
+          
+          opciones$tabla <- opciones$tabla_original
+          
+          opciones$cambios <- list()
+          
+        }
+      })
+      
+      observeEvent(input$confirmar_fecha, {
+        fecha_columna <- input$fecha_columna
+        fecha_formato <- input$fecha_formato
+        
+        tryCatch(
+          expr = {
+            opciones$data_original <- opciones$data_original %>% 
+              mutate(!!fecha_columna := as.Date(!!as.name(fecha_columna),
+                                                format = fecha_formato))
+            
+            if (class(pull(opciones$data_original, !!as.name(fecha_columna)))
+                == "Date") {
+              opciones$validar_fecha = TRUE
+              removeModal()
+            } else {
+              showNotification("Columna no fue convertida a fecha.",
+                               type = "warning")
+            }
+          },
+          error = function(e) {
+            print(e)
+            showNotification(
+              ui = "No se pudo convertir a fecha",
+              type = "error",
+              session = session
+            )
+          }
         )
-      }
-    )
-  })
-  
-  observeEvent(input$consolidar_rips_confirmar, {
-    if (!is.null(opciones_prepara$prestadores_unicos)) {
-      if (!is.null(input$consolidar_rips_prestador)) {
-    withProgress(
-      min = 0,
-      max = 0,
-      detail = "Generando relaciones...",
-      expr = {
-        datos$data_original <- leer_rips_todos(
-          datos = datos$rips,
-          prestadores = input$consolidar_rips_prestador,
-          cups = read_feather(
-            "datos/didacticos/Nombres de prestacion con CUPS.feather"),
-          session = session
+        
+      })
+      
+      observe({
+        tryCatch(
+          expr = {
+            opciones$tabla <- map_func(opciones$tabla_original, opciones$cambios)
+          },
+          error = function(e) {
+            print(e)
+            showNotification(
+              ui = "No se trabajar con la tabla seleccionada. Valide que aun exista.",
+              type = "error",
+              session = session
+            )
+          }
         )
-        setnames(datos$data_original, tolower(colnames(datos$data_original)))
-        datos$data_table <- datos$data_original
-        datos$valores_unicos <- lapply(datos$data_table, unique)
-        datos$colnames <- colnames(datos$data_table)
-        columnas_num <- unlist(lapply(datos$data_table[1,], is.numeric))
-        datos$colnames_num <- datos$colnames[columnas_num]
-      }
-    )
-      }
-    }
-  })
-  
-  observeEvent(datos$colnames, {
-    updateSelectizeInput(
-      session = session,
-      inputId = "columna_valor",
-      choices = datos$colnames_num,
-      selected = "valor"
-    )
-  })
-  
-  
-  output$preview <- DT::renderDataTable({
-    if (is.null(datos$colnames)) {
-      data.table()
-    } else {
-      tryCatch(
-        expr = {
-          columnas <- intersect(
-            x = c(
-              "nro_identificacion",
-              "fecha_prestacion",
-              "valor"),
-            y = names(datos$data_original[1])
+      })
+     
+      output$logs <- renderText({
+        paste(names(opciones$cambios), collapse = "\n")
+      })
+      
+      observeEvent(input$undo, {
+        n_cambios <- length(opciones$cambios)
+        opciones$cambios <- opciones$cambios[-n_cambios]
+      })
+      
+      observeEvent(input$export_sql, {
+        if (!is.null(opciones$tabla)) {
+          showModal(
+            ui = modalDialog(
+              easyClose = TRUE, 
+              footer = NULL,
+              shinyAce::aceEditor(
+                ns("export_sql_ace"),
+                value = opciones$tabla %>% dbplyr::sql_render() %>% str_remove("<SQL>"), 
+                mode = "pgsql", 
+                wordWrap = TRUE
+              )
+            )
           )
-          DT::datatable(
-            data = datos$data_original[
-              1:5,
-              columnas,
-              with = FALSE],
-            rownames = FALSE,
-            options = list(
-              columnDefs = list(
-                list(
-                  className = 'dt-center',
-                  targets = "_all")),
-              dom = 't',
-              pageLength = 5,
-              ordering = FALSE,
-              language = list(
-                url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')
-            )) %>%
-            DT::formatStyle(
-              columns = 1:length(columnas),
-              valueColumns = 1,
-              backgroundColor = "white")
-        },
-        error = function(e) {
-          print(e[1])
-          sendSweetAlert(
-            session = session,
-            title = "Error",
-            text = e[1],
-            type = "error"
+        } else {
+          showNotification(
+            ui = "No hay una tabla seleccionada",
+            type = "warning"
           )
         }
-      )
+      })
+       
     }
-  })
-  
-  return(datos)
+  )
   
 }
 

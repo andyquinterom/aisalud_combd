@@ -14,17 +14,19 @@ shinyUI(function(request) {tagList(
         tabsetPanel(
           tabPanel(
             "Datos",
+            tags$br(),
             prepara_ui("cargar_datos")
           ),
           tabPanel(
             "Agrupadores",
+            tags$br(),
             prepara_ui("cargar_agrupadores")
           ),
-          tabPanel(
-            "Descargar",
-            tags$br(),
-            descargar_ui("descargar_datos")
-          ),
+          # tabPanel(
+          #   "Descargar",
+          #   tags$br(),
+          #   descargar_ui("descargar_datos")
+          # ),
           tabPanel(
             "Nube",
             tags$br(),
@@ -45,12 +47,12 @@ shinyUI(function(request) {tagList(
                      column(width = 12,
                             filtros_ui("filtros")
                             )
-                   )),
-          tabPanel(title = "Otras funciones",
-                   fluidRow(
-                     column(width = 12,
-                            otras_funciones_ui("otras_funciones"))
                    ))
+          # tabPanel(title = "Otras funciones",
+          #          fluidRow(
+          #            column(width = 12,
+          #                   otras_funciones_ui("otras_funciones"))
+          #          ))
         )
       )
     )

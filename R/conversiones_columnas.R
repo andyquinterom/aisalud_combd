@@ -58,3 +58,19 @@ conversion_tipousuario <- function(tipo_usuario) {
     )
   )
 }
+
+map_func <- function(object, functions) {
+  temp_obj <- object
+  
+  lapply(
+    X = functions,
+    FUN = function(x) {
+      temp_obj <<- temp_obj %>% 
+        x()
+    }
+  )
+  
+  return(temp_obj)
+}
+
+
