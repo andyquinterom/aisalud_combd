@@ -53,26 +53,9 @@ shinyServer(function(input, output, session) {
     opciones = opciones,
     opciones_agrupadores = opciones_agrupadores
   )
-  
-  # callModule(
-  #   module = agrupadores_server,
-  #   id = "agrupadores",
-  #   datos = datos,
-  #   agrupadores = agrupadores
-  # )
 
-  # # Modulo de filtros
-  # 
   filtros_server(id = "filtros", opciones = opciones)
-  # 
-  # # Modulo de descargas
-  # 
-  # callModule(
-  #   module = descargar_server,
-  #   id = "descargar_datos",
-  #   datos = datos
-  # )
-  # 
-  # otras_funciones_server("otras_funciones", datos)
-  # 
+
+  preview_server(id = "preview", opciones = opciones)
+  
 })
