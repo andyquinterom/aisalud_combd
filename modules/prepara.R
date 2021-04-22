@@ -68,16 +68,6 @@ prepara_server <- function(id, opciones, prefix = "ais_") {
     id = id,
     module = function(input, output, session) {
       
-      
-      observe({
-        updateRadioButtons(
-          session = session,
-          inputId = "value_decimal",
-          selected = opciones$sep_decimal
-        )
-        print(opciones$sep_decimal)
-      })
-      
       observe({
         opciones$sep_decimal <- input$value_decimal
       })
