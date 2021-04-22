@@ -57,15 +57,38 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
         if (!is.null(opciones$colnames)) {
           if (opciones_nube$almacenamiento <
               opciones_nube$almacenamiento_total) {
+            fecha_incluida <- "Date" %in% opciones$coltypes[["fecha_prestacion"]]
             showModal(
               session = session,
               ui = modalDialog(
+                easyClose = TRUE, 
                 title = "Nombre de la tabla",
                 textInput(
                   inputId = ns("subir_tabla_nombre"),
                   label = "",
                   width = "100%"
                 ),
+                if (!fecha_incluida) {
+                  fluidRow(
+                    column(
+                      width = 6,
+                      selectInput(
+                        inputId = ns("subir_tabla_fecha_columna"),
+                        label = "Columna de fecha:",
+                        choices = as.character(opciones$colnames),
+                        selected = "fecha_prestacion"
+                      )
+                    ),
+                    column(
+                      width = 6,
+                      textInput(
+                        inputId = ns("subir_tabla_fecha_formato"),
+                        label = "Formato de fecha",
+                        value = "DD/MM/YYYY"
+                      )
+                    )
+                  )
+                },
                 fluidRow(
                   column(
                     width = 6,
@@ -98,6 +121,9 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
                   )
                 ),
                 includeMarkdown("markdown/subir_tabla.md"),
+                DT::dataTableOutput(
+                  outputId = ns("preview")
+                ),
                 footer = actionButton(
                   inputId = ns("subir_tabla_confirmar"),
                   label = "Subir tabla")
@@ -117,30 +143,75 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
         }
       })
       
+      output$preview <- DT::renderDataTable({
+        opciones$tabla %>% 
+          select(!!!rlang::syms(c(
+            input$subir_tabla_nro_identificacion,
+            input$subir_tabla_valor_columna,
+            input$subir_tabla_cantidad,
+            ifelse(
+              test = !is.null(input$subir_tabla_fecha_columna),
+              yes = input$subir_tabla_fecha_columna,
+              no = "fecha_prestacion"
+            )))) %>% 
+          head(3) %>% 
+          collect() %>% 
+          datatable(
+            options = list(
+              language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json'),
+              dom = 't'
+            )
+          )
+      })
+      
       observeEvent(input$subir_tabla_confirmar, {
         if (input$subir_tabla_nombre != "") {
+          fecha_incluida <- "Date" %in% opciones$coltypes[["fecha_prestacion"]]
           columna_nro_identificacion <- input$subir_tabla_nro_identificacion
           columna_valor <- input$subir_tabla_valor_columna
           columna_cantidad <- input$subir_tabla_cantidad
+          if (!fecha_incluida) {
+            columna_fecha <- input$subir_tabla_fecha_columna
+            columna_fecha_formato <- input$subir_tabla_fecha_formato
+            fecha_incluida <- 
+              "Date" %in% opciones$coltypes[[columna_fecha]]
+          } else {
+            columna_fecha <- "fecha_prestacion"
+          }
+          sep_decimal_coma <- opciones$sep_decimal == ","
           
-          fecha_incluida <- "Date" %in% opciones$coltypes[["fecha_prestacion"]]
+          columna_valor_numerica <- 
+            "numeric" %in% opciones$coltypes[[columna_valor]]
+          columna_cantidad_numerica <-
+            "numeric" %in% opciones$coltypes[[columna_cantidad]]
           
           removeModal(session = session)
           
-          if (opciones_nube$almacenamiento < opciones_nube$almacenamiento_total &&
-              fecha_incluida) {
+          if (opciones_nube$almacenamiento < opciones_nube$almacenamiento_total) {
             nombre_tabla <- paste0("ais_", tolower(input$subir_tabla_nombre))
             tryCatch(
               expr = {
                 withProgress(
                   message = "Subiendo base de datos a la nube.",
                   expr = {
-                    
                     opciones$tabla %>% 
                       rename(
+                        fecha_prestacion = !!as.name(columna_fecha),
                         valor = !!as.name(columna_valor),
                         cantidad = !!as.name(columna_cantidad),
                         nro_identificacion = !!as.name(columna_nro_identificacion)) %>% 
+                      {if (!fecha_incluida) {
+                        mutate(., fecha_prestacion = TO_DATE(
+                          fecha_prestacion, columna_fecha_formato))
+                      } else {.}} %>% 
+                      {if (sep_decimal_coma && 
+                           (!columna_valor_numerica) &&
+                           (!columna_cantidad_numerica)) {
+                        mutate(
+                          .data = .,
+                          valor = str_replace(valor, ",", "."),
+                          cantidad = str_replace(cantidad, ",", "."))
+                      } else {.}} %>% 
                       mutate(
                         valor = as.numeric(valor),
                         cantidad = as.numeric(cantidad),
@@ -180,7 +251,8 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
               error = function(e) {
                 print(e)
                 showNotification(
-                  ui = "Error subiendo la base de datos.",
+                  ui = paste(
+                    "Error subiendo la base de datos.", e, sep = "\n"),
                   type = "error",
                   session = session
                 )
@@ -189,7 +261,7 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
           } else {
             showNotification(
               type = "warning",
-              ui = "Columna de fecha invalida o almacenamiento lleno."
+              ui = "Almacenamiento lleno."
             )
           }
           opciones_nube$resultados_subidas <- NULL

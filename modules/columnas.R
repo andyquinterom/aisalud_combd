@@ -201,9 +201,16 @@ columnas_server <- function(id, opciones) {
           if (col_mod_type != "numeric") {
             opciones$cambios[[nombre_cambio]] <- 
               function(x) {
-                mutate(
-                  .data = x,
-                  !!col_mod := as.numeric(!!as.name(col_mod)))
+                if (opciones$sep_decimal == ",") {
+                  mutate(
+                    .data = x,
+                    !!col_mod := as.numeric(
+                      str_replace(!!as.name(col_mod), ",", ".")))
+                } else {
+                  mutate(
+                    .data = x,
+                    !!col_mod := as.numeric(!!as.name(col_mod)))
+                }
               }
           }
           

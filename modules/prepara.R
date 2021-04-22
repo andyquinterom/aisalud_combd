@@ -37,24 +37,50 @@ prepara_ui <- function(id) {
         fluidRow(
           column(width = 6, actionButton(
             inputId = ns("file_options_open"),
-            label = "Opciones", 
+            label = "Opciones archivo", 
             width = "100%")),
           column(width = 6, actionButton(
             inputId = ns("file_load"), 
             label = "Aplicar", 
             width = "100%")))
+      ),
+      tabPanel(
+        title = "Opciones",
+        tags$br(),
+        radioButtons(
+          inputId = ns("value_decimal"),
+          choiceNames = c("Punto", "Coma"),
+          choiceValues = c(".", ","),
+          label = "Separador decimal",
+          inline = TRUE,
+          selected = "."
+        )
       )
     )
   )
 }
 
-prepara_server <- function(id, opciones, validar_fecha = FALSE, prefix = "ais_") {
+prepara_server <- function(id, opciones, prefix = "ais_") {
   
   ns <- NS(id)
   
   moduleServer(
     id = id,
     module = function(input, output, session) {
+      
+      
+      observe({
+        updateRadioButtons(
+          session = session,
+          inputId = "value_decimal",
+          selected = opciones$sep_decimal
+        )
+        print(opciones$sep_decimal)
+      })
+      
+      observe({
+        opciones$sep_decimal <- input$value_decimal
+      })
       
       observe({
         tablas_query <- dbListTables(conn = conn) %>%
@@ -83,7 +109,6 @@ prepara_server <- function(id, opciones, validar_fecha = FALSE, prefix = "ais_")
       })
       
       opciones_prepara <- reactiveValues(
-        "value_decimal" = ".",
         "value_delimitador" = ",",
         "value_sheet" = NULL,
         "value_range" = NULL
@@ -99,7 +124,6 @@ prepara_server <- function(id, opciones, validar_fecha = FALSE, prefix = "ais_")
             datos_opciones_ui(
               id = id,
               file_type = input$file_type,
-              value_decimal = opciones_prepara$value_decimal,
               value_delimitador = opciones_prepara$value_delimitador,
               value_range = opciones_prepara$value_range,
               value_sheet = opciones_prepara$value_sheet,
@@ -112,7 +136,6 @@ prepara_server <- function(id, opciones, validar_fecha = FALSE, prefix = "ais_")
       })
       
       observeEvent(input$datos_opciones_guardar, {
-        opciones_prepara$value_decimal <- input$value_decimal
         opciones_prepara$value_delimitador <- input$value_delimitador
         opciones_prepara$value_sheet <- input$value_sheet
         opciones_prepara$value_range <- input$value_range
@@ -123,48 +146,92 @@ prepara_server <- function(id, opciones, validar_fecha = FALSE, prefix = "ais_")
       observeEvent(input$file_load, {
         tryCatch(
           expr = {
-            if (!is.null(input$file)) {
-              opciones$data_original <- data.frame()
-              opciones$validar_fecha <- !validar_fecha
-              file_name <- sub(
-                ".csv$|.feather$|.txt$|.xlsx$",
-                "",
-                basename(input$file$name))
-              if (input$file_type == "csv") {
-                value_delimitador <- ifelse(
-                  test = opciones_prepara$value_delimitador == "Espacios",
-                  yes = "\t",
-                  no = opciones_prepara$value_delimitador
-                )
-                opciones$data_original <- read_delim(
-                  file = input$file$datapath, 
-                  delim = value_delimitador, 
-                  col_types = cols(.default = col_character()),
-                  locale = locale(
-                    encoding = guess_encoding(input$file$datapath)[[1]][1],
-                    decimal_mark = opciones_prepara$value_decimal))
-              } 
-              if (input$file_type == "feather") {
-                opciones$data_original <- read_feather(
-                  path = input$file$datapath)
+            withProgress(
+              min = 0,
+              max = 1,
+              value = 0.2, 
+              message = "Cargando datos...",
+              expr = {
+                if (!is.null(input$file)) {
+                  opciones$data_original <- data.frame()
+                  file_name <- sub(
+                    ".csv$|.feather$|.txt$|.xlsx$",
+                    "",
+                    basename(input$file$name))
+                  if (input$file_type == "csv") {
+                    value_delimitador <- ifelse(
+                      test = opciones_prepara$value_delimitador == "Espacios",
+                      yes = "\t",
+                      no = opciones_prepara$value_delimitador
+                    )
+                    opciones$data_original <- read_delim(
+                      file = input$file$datapath, 
+                      delim = value_delimitador, 
+                      col_types = cols(.default = col_character()),
+                      locale = locale(
+                        encoding = guess_encoding(input$file$datapath)[[1]][1]))
+                  } 
+                  if (input$file_type == "feather") {
+                    opciones$data_original <- read_feather(
+                      path = input$file$datapath)
+                  }
+                  
+                  incProgress(amount = 0.4)
+                  
+                  opciones$nombre_tabla <- paste(
+                    sep = "",
+                    "temporal_", prefix, file_name,
+                    round(runif(1, 100, 999), 0))
+                  
+                  opciones$data_original <- opciones$data_original %>% 
+                    rename_with(tolower) %>% 
+                    rename_with(.fn = function(x) {
+                      x %>% 
+                        stri_trans_general(id = "Latin-ASCII") %>% 
+                        str_replace_all("\\s", "_") %>% 
+                        str_replace_all('[^0-9a-zA-Z]+', "_")
+                    })
+                  
+                  dbWriteTable(
+                    conn = conn,
+                    name = opciones$nombre_tabla,
+                    value = opciones$data_original,
+                    temporary = TRUE)
+                  
+                  incProgress(amount = 0.2)
+                  
+                  tablas_query <- dbListTables(conn = conn) %>%
+                    unlist() %>%
+                    unname()
+                  
+                  tablas <- tablas_query[str_starts(
+                    string = tablas_query, paste(
+                      paste0("temporal_", prefix), prefix, sep = "|"
+                    ))] 
+                  
+                  if (identical(character(0), tablas)) {
+                    tablas <- NULL
+                    updateSelectizeInput(
+                      session = session,
+                      inputId = "nube_tablas",
+                      choices = "Ninguno"
+                    )
+                  } else {
+                    updateSelectizeInput(
+                      session = session,
+                      inputId = "nube_tablas",
+                      selected = opciones$nombre_tabla,
+                      choices = c("Ninguno", tablas)
+                    )
+                  }
+                  
+                  opciones$data_original <- NULL
+                  gc(full = TRUE)
+                  
+                  incProgress(amount = 0.2)
+                }
               }
-              
-              opciones$nombre_tabla <- paste(
-                sep = "",
-               "temporal_", prefix, file_name,
-                round(runif(1, 100, 999), 0))
-              
-              opciones$data_original <- opciones$data_original %>% 
-                rename_with(tolower) %>% 
-                rename_with(.fn = function(x) {
-                  x %>% 
-                    stri_trans_general(id = "Latin-ASCII") %>% 
-                    str_replace_all("\\s", "_") %>% 
-                    str_replace_all('[^0-9a-zA-Z]+', "_")
-                })
-              
-              
-            }
+            )
           },
           error = function(e) {
             print(e)
@@ -178,77 +245,6 @@ prepara_server <- function(id, opciones, validar_fecha = FALSE, prefix = "ais_")
         )
       })
       
-      observeEvent(opciones$data_original, {
-        if (nrow(opciones$data_original > 0)) {
-          if (!opciones$validar_fecha) {
-            showModal(
-              session = session,
-              ui = modalDialog(
-                title = "Columna de fecha",
-                fluidRow(
-                  column(
-                    width = 4,
-                    selectInput(
-                      inputId = ns("fecha_columna"),
-                      label = "Columna de fecha:",
-                      choices = as.character(colnames(opciones$data_original)),
-                      selected = "fecha_prestacion"
-                    )
-                  ),
-                  column(
-                    width = 4,
-                    textInput(
-                      inputId = ns("fecha_formato"),
-                      label = "Formato de fecha",
-                      value = "%d/%m/%Y"
-                    )
-                  )
-                ),
-                footer = actionButton(
-                  inputId = ns("confirmar_fecha"),
-                  label = "Validar columna de fecha")
-              )
-            )
-          } else {
-            withProgress(message = "Cargando datos", {
-              dbWriteTable(
-                conn = conn,
-                name = opciones$nombre_tabla,
-                value = opciones$data_original,
-                temporary = TRUE)
-              
-              tablas_query <- dbListTables(conn = conn) %>%
-                unlist() %>%
-                unname()
-              
-              tablas <- tablas_query[str_starts(
-                string = tablas_query, paste(
-                  paste0("temporal_", prefix), prefix, sep = "|"
-                ))] 
-              
-              if (identical(character(0), tablas)) {
-                tablas <- NULL
-                updateSelectizeInput(
-                  session = session,
-                  inputId = "nube_tablas",
-                  choices = "Ninguno"
-                )
-              } else {
-                updateSelectizeInput(
-                  session = session,
-                  inputId = "nube_tablas",
-                  selected = opciones$nombre_tabla,
-                  choices = c("Ninguno", tablas)
-                )
-              }
-              
-              opciones$data_original <- NULL
-              gc(full = TRUE)
-            })
-          }
-        }
-      })
-      
       observeEvent(input$nube_tablas, {
         if (input$nube_tablas != "Ninguno") {
           
@@ -259,37 +255,6 @@ prepara_server <- function(id, opciones, validar_fecha = FALSE, prefix = "ais_")
           opciones$cambios <- list()
           
         }
-      })
-      
-      observeEvent(input$confirmar_fecha, {
-        fecha_columna <- input$fecha_columna
-        fecha_formato <- input$fecha_formato
-        
-        tryCatch(
-          expr = {
-            opciones$data_original <- opciones$data_original %>% 
-              mutate(!!fecha_columna := as.Date(!!as.name(fecha_columna),
-                                                format = fecha_formato))
-            
-            if (class(pull(opciones$data_original, !!as.name(fecha_columna)))
-                == "Date") {
-              opciones$validar_fecha = TRUE
-              removeModal()
-            } else {
-              showNotification("Columna no fue convertida a fecha.",
-                               type = "warning")
-            }
-          },
-          error = function(e) {
-            print(e)
-            showNotification(
-              ui = "No se pudo convertir a fecha",
-              type = "error",
-              session = session
-            )
-          }
-        )
-        
       })
       
       observe({
@@ -347,14 +312,13 @@ prepara_server <- function(id, opciones, validar_fecha = FALSE, prefix = "ais_")
 # Funciones --------------------------------------------------------------------
 
 datos_opciones_ui <- function(
-  id, file_type, value_decimal, value_delimitador, value_sheet, value_range,
+  id, file_type, value_delimitador, value_sheet, value_range,
   value_file) {
   
   if (file_type == "csv") {
     return(
       datos_opciones_csv_ui(
         id = id,
-        value_decimal = value_decimal,
         value_delimitador = value_delimitador)
     )
   }
@@ -370,7 +334,7 @@ datos_opciones_ui <- function(
   
 }
 
-datos_opciones_csv_ui <- function(id, value_delimitador, value_decimal) {
+datos_opciones_csv_ui <- function(id, value_delimitador) {
   ns <- NS(id)
   
   tagList(
@@ -380,15 +344,6 @@ datos_opciones_csv_ui <- function(id, value_delimitador, value_decimal) {
       label = "Delimitador",
       inline = TRUE,
       selected = value_delimitador
-    ),
-    
-    radioButtons(
-      inputId = ns("value_decimal"),
-      choiceNames = c("Punto", "Coma"),
-      choiceValues = c(".", ","),
-      label = "Separador decimal",
-      inline = TRUE,
-      selected = value_decimal
     )
   )
   

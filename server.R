@@ -1,7 +1,8 @@
 shinyServer(function(input, output, session) {
   
   opciones <- reactiveValues(
-    cambios = list()
+    cambios = list(),
+    sep_decimal = "."
   )
   
   opciones_agrupadores <- reactiveValues(
@@ -10,8 +11,7 @@ shinyServer(function(input, output, session) {
   
   prepara_server(
     id = "cargar_datos",
-    opciones = opciones,
-    validar_fecha = TRUE
+    opciones = opciones
   )
   
   columnas_server(
