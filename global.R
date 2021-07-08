@@ -37,8 +37,7 @@ conn <- dbConnect(
   user = Sys.getenv("DATABASE_USER"),
   password = Sys.getenv("DATABASE_PW"),
   host = Sys.getenv("DATABASE_HOST"),
-  port = Sys.getenv("DATABASE_PORT"),
-  sslmode = "require")
+  port = Sys.getenv("DATABASE_PORT"))
 
 onStop(function() {
   dbDisconnect(conn = conn)

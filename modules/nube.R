@@ -1,12 +1,12 @@
 nube_ui <- function(id) {
-  ns <- NS(id) 
-  
+  ns <- NS(id)
+
   tagList(
     fluidRow(
       tags$br(),
       shinyWidgets::progressBar(
         id = ns("almacenamiento_percent"),
-        value = 100, 
+        value = 100,
         display_pct = TRUE,
         striped = TRUE)
     ),
@@ -15,44 +15,44 @@ nube_ui <- function(id) {
 }
 
 nube_server <- function(id, opciones, opciones_agrupadores) {
-  
+
   ns <- NS(id)
-  
+
   moduleServer(
     id = id,
     module = function(input, output, session) {
-      
+
       opciones_nube <- reactiveValues()
-      
+
       update_almacenamiento <- reactive({
         list(input$conectar_al_servicio, opciones_nube$resultados_subidas,
              opciones_nube$resultado_eliminacion)
       })
-      
+
       actualizar_tablas <- reactiveTimer()
-      
+
       observe({
         actualizar_tablas()
         if (!is.null(conn)) {
           opciones_nube$tablas_almacenadas <- dbListTables(conn) %>% {
             if (identical(character(0), .)) {NULL} else {.}}
-          
+
           opciones_nube$almacenamiento <- check_db_size(
             con = conn,
             database = Sys.getenv("DATABASE_NAME")
-          ) %>% 
+          ) %>%
             ifelse(is.null(.),
               yes = 0,
               no = .)
-          
+
           opciones_nube$almacenamiento_total <- Sys.getenv("DATABASE_MAX_STORAGE") %>%
             as.numeric()
-          
+
           opciones_nube$tablas_almacenadas <- dbListTables(conn) %>% {
             if (identical(character(0), .)) {NULL} else {.}}
         }
       })
-      
+
       observeEvent(input$subir_tabla, {
         if (!is.null(opciones$colnames)) {
           if (opciones_nube$almacenamiento <
@@ -61,7 +61,7 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
             showModal(
               session = session,
               ui = modalDialog(
-                easyClose = TRUE, 
+                easyClose = TRUE,
                 title = "Nombre de la tabla",
                 textInput(
                   inputId = ns("subir_tabla_nombre"),
@@ -142,9 +142,9 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
           }
         }
       })
-      
+
       output$preview <- DT::renderDataTable({
-        opciones$tabla %>% 
+        opciones$tabla %>%
           select(!!!rlang::syms(c(
             input$subir_tabla_nro_identificacion,
             input$subir_tabla_valor_columna,
@@ -153,9 +153,9 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
               test = !is.null(input$subir_tabla_fecha_columna),
               yes = input$subir_tabla_fecha_columna,
               no = "fecha_prestacion"
-            )))) %>% 
-          head(3) %>% 
-          collect() %>% 
+            )))) %>%
+          head(3) %>%
+          collect() %>%
           datatable(
             options = list(
               language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json'),
@@ -163,7 +163,7 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
             )
           )
       })
-      
+
       observeEvent(input$subir_tabla_confirmar, {
         if (input$subir_tabla_nombre != "") {
           fecha_incluida <- "Date" %in% opciones$coltypes[["fecha_prestacion"]]
@@ -173,20 +173,20 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
           if (!fecha_incluida) {
             columna_fecha <- input$subir_tabla_fecha_columna
             columna_fecha_formato <- input$subir_tabla_fecha_formato
-            fecha_incluida <- 
+            fecha_incluida <-
               "Date" %in% opciones$coltypes[[columna_fecha]]
           } else {
             columna_fecha <- "fecha_prestacion"
           }
           sep_decimal_coma <- opciones$sep_decimal == ","
-          
-          columna_valor_numerica <- 
+
+          columna_valor_numerica <-
             "numeric" %in% opciones$coltypes[[columna_valor]]
           columna_cantidad_numerica <-
             "numeric" %in% opciones$coltypes[[columna_cantidad]]
-          
+
           removeModal(session = session)
-          
+
           if (opciones_nube$almacenamiento < opciones_nube$almacenamiento_total) {
             nombre_tabla <- paste0("ais_", tolower(input$subir_tabla_nombre))
             tryCatch(
@@ -194,40 +194,64 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
                 withProgress(
                   message = "Subiendo base de datos a la nube.",
                   expr = {
-                    opciones$tabla %>% 
+                    if (!"temporal_meses" %in% dbListTables(conn)) {
+                      dbWriteTable(
+                        conn = conn,
+                        name = "temporal_meses",
+                        value = data.frame(
+                          ais_mes = 1:12,
+                          ais_mes_nombre = c(
+                            "Enero",
+                            "Febrero",
+                            "Marzo",
+                            "Abril",
+                            "Mayo",
+                            "Junio",
+                            "Julio",
+                            "Agosto",
+                            "Septiembre",
+                            "Octubre",
+                            "Noviembre",
+                            "Diciembre"
+                          )
+                        )
+                      )
+                    }
+                    opciones$tabla %>%
                       rename(
                         fecha_prestacion = !!as.name(columna_fecha),
                         valor = !!as.name(columna_valor),
                         cantidad = !!as.name(columna_cantidad),
-                        nro_identificacion = !!as.name(columna_nro_identificacion)) %>% 
+                        nro_identificacion = !!as.name(columna_nro_identificacion)) %>%
                       {if (!fecha_incluida) {
                         mutate(., fecha_prestacion = TO_DATE(
                           fecha_prestacion, columna_fecha_formato))
-                      } else {.}} %>% 
-                      {if (sep_decimal_coma && 
+                      } else {.}} %>%
+                      {if (sep_decimal_coma &&
                            (!columna_valor_numerica) &&
                            (!columna_cantidad_numerica)) {
                         mutate(
                           .data = .,
                           valor = str_replace(valor, ",", "."),
                           cantidad = str_replace(cantidad, ",", "."))
-                      } else {.}} %>% 
+                      } else {.}} %>%
                       mutate(
                         valor = as.numeric(valor),
                         cantidad = as.numeric(cantidad),
                         ais_mes = month(fecha_prestacion),
-                        ais_anio = year(fecha_prestacion)) %>% 
+                        ais_anio = year(fecha_prestacion)) %>%
+                      left_join(tbl(conn, "temporal_meses")) %>%
                       lazy_to_postgres(
                         nombre = nombre_tabla,
                         conn = conn
                       )
-                    
+
                     nombre_tabla_alpha_numeric <- gsub(
                       pattern = "[^[:alnum:] ]",
                       replacement = "",
                       nombre_tabla
                     )
-                    
+
                     index_query <- str_replace_all(
                       'CREATE INDEX #index_name#
                   ON "#tabla#" USING btree
@@ -237,15 +261,15 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
                       str_replace_all(
                         pattern = "#index_name#",
                         replacement = gsub(
-                          pattern = "([[:space:]])|(')|('$)|(\")|(\"$)|(\`)|(\`$)", 
+                          pattern = "([[:space:]])|(')|('$)|(\")|(\"$)|(\`)|(\`$)",
                           replacement = "_",
                           paste(nombre_tabla_alpha_numeric, "fechas_index")))
-                    
+
                     dbExecute(
                       conn = conn,
                       statement = index_query
                     )
-                    
+
                   })
               },
               error = function(e) {
@@ -273,7 +297,7 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
           )
         }
       })
-      
+
       observeEvent(input$subir_agrupadores, {
         if (!is.null(opciones_agrupadores$colnames)) {
           if (opciones_nube$almacenamiento <
@@ -305,11 +329,11 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
           }
         }
       })
-      
+
       observeEvent(input$subir_agrupadores_confirmar, {
         if (input$subir_agrupadores_nombre != "") {
           removeModal(session = session)
-          
+
           if (opciones_nube$almacenamiento < opciones_nube$almacenamiento_total) {
             nombre_tabla <- paste0(
               "agrupador_",
@@ -319,13 +343,13 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
                 withProgress(
                   message = "Subiendo base de datos a la nube.",
                   expr = {
-                    
-                    opciones_agrupadores$tabla %>% 
+
+                    opciones_agrupadores$tabla %>%
                       lazy_to_postgres(
                         nombre = nombre_tabla,
                         conn = conn
                       )
-                    
+
                   })
               },
               error = function(e) {
@@ -352,7 +376,7 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
           )
         }
       })
-      
+
       observeEvent(opciones_nube$almacenamiento, {
         if (!is.na(opciones_nube$almacenamiento)) {
           uso <- (opciones_nube$almacenamiento /
@@ -379,7 +403,7 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
           )
         }
       })
-      
+
       output$tablas_lista <- DT::renderDataTable(server = FALSE, {
         datatable(
           data = data.frame("Tablas" = opciones_nube$tablas_almacenadas),
@@ -394,21 +418,21 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
           )
         )
       })
-      
+
       observeEvent(input$remover_tabla_seleccionada, {
         if (!is.null(input$tablas_lista_rows_selected)) {
           confirmSweetAlert(
             session = session,
             inputId = ns("remover_tabla_seleccionada_confirmar"),
-            title = "Confirmar eliminación", 
+            title = "Confirmar eliminación",
             text = "Este cambio no es reversible.",
             btn_labels = c("Cancelar", "Confirmar")
           )
         }
       })
-      
+
       observeEvent(input$remover_tabla_seleccionada_confirmar, {
-        if (!is.null(input$tablas_lista_rows_selected) && 
+        if (!is.null(input$tablas_lista_rows_selected) &&
             input$remover_tabla_seleccionada_confirmar) {
           tryCatch(
             expr = {
@@ -438,7 +462,7 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
           )
         }
       })
-      
+
       output$ui_conectado <- renderUI({
         if (!is.null(opciones_nube$almacenamiento_total)) {
           tagList(
@@ -454,20 +478,20 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
             fluidRow(
               actionGroupButtons(
                 inputIds = ns(c("subir_tabla", "subir_agrupadores")),
-                labels = c("Subir tabla", "Subir agrupadores"), 
+                labels = c("Subir tabla", "Subir agrupadores"),
                 fullwidth = TRUE
               )
             )
           )
         }
       })
-      
-      
+
+
     }
   )
-  
+
 }
-  
-  
+
+
 
 # curl -X GET "https://users.indexmic.com/content/29/almacenamiento" -H  "accept: */*"
