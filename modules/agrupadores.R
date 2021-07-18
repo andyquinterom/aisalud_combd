@@ -1,6 +1,6 @@
 agrupadores_ui <- function(id) {
   ns <- NS(id)
-  
+
   tagList(
     fluidRow(
       column(
@@ -36,7 +36,7 @@ agrupadores_ui <- function(id) {
         ),
         actionGroupButtons(
           inputIds = ns(c("agrupar_left", "agrupar_inner")),
-          labels = c("Left join", "Inner Join"), 
+          labels = c("Left join", "Inner Join"),
           direction = "horizontal"
         )
       )
@@ -45,13 +45,13 @@ agrupadores_ui <- function(id) {
 }
 
 agrupadores_server <- function(id, opciones, opciones_agrupadores) {
-  
+
   ns <- NS(id)
-  
+
   moduleServer(
     id = id,
     module = function(input, output, session) {
-      
+
       observe({
         updateSelectizeInput(
           session = session,
@@ -59,7 +59,7 @@ agrupadores_server <- function(id, opciones, opciones_agrupadores) {
           choices = opciones$colnames
         )
       })
-      
+
       observe({
         updateSelectizeInput(
           session = session,
@@ -72,37 +72,35 @@ agrupadores_server <- function(id, opciones, opciones_agrupadores) {
           choices = opciones_agrupadores$colnames
         )
       })
-      
+
       observeEvent(input$agrupar_left, {
-        
         tryCatch(
           expr = {
-            if (!("" %in% input$llave_foranea) &&
-                !("" %in% input$llave_primaria) &&
-                !("" %in% input$agrupadores)) {
+            if (!is.null(input$llave_foranea) &&
+                !is.null(input$llave_primaria) &&
+                !is.null(input$agrupadores)) {
               llave_foranea <- input$llave_foranea
               llave_primaria <- input$llave_primaria
               agrupadores <- input$agrupadores
-              
-              tabla_temp_agrupadores <- opciones_agrupadores$tabla %>% 
+
+              tabla_temp_agrupadores <- opciones_agrupadores$tabla %>%
                 select(!!!rlang::syms(c(llave_primaria, agrupadores)))
-              
+
               coltypes_agrupador <- opciones_agrupadores$coltypes
-              
+
               llave_primaria_named <- llave_primaria
               names(llave_primaria_named) <- llave_foranea
-              
+
               n_cambios <- length(opciones$cambios) + 1
-              
+
               nombre_cambio <- paste(
-                n_cambios, "-", "Left join por", 
+                n_cambios, "-", "Left join por",
                 paste(llave_foranea, collapse = ", "))
-              
+
               agrupadores_char <- purrr::map(
                 .x = agrupadores,
                 .f = function(y) {
                   tipo_columna <- coltypes_agrupador[[y]]
-                  print(tipo_columna)
                   if (identical(tipo_columna, "character")) {
                     return(y)
                   } else {
@@ -110,14 +108,12 @@ agrupadores_server <- function(id, opciones, opciones_agrupadores) {
                   }
                 }
               ) %>% unlist()
-              
-              print(agrupadores_char)
-              
-              opciones$cambios[[nombre_cambio]] <- 
+
+              opciones$cambios[[nombre_cambio]] <-
                 function(x) {
                   left_join(x = x, y = tabla_temp_agrupadores,
                             by = llave_primaria_named,
-                            suffix = c(".datos", ".agrupadores")) %>% 
+                            suffix = c(".datos", ".agrupadores")) %>%
                     {if (!is.null(agrupadores_char)) {
                       mutate(.data = ., across(
                         .cols = starts_with(!! agrupadores_char),
@@ -139,37 +135,48 @@ agrupadores_server <- function(id, opciones, opciones_agrupadores) {
           }
         )
       })
-      
+
       observeEvent(input$agrupar_inner, {
-        
         tryCatch(
           expr = {
-            if (!("" %in% input$llave_foranea) &&
-                !("" %in% input$llave_primaria) &&
-                !("" %in% input$agrupadores)) {
+            if (!is.null(input$llave_foranea) &&
+                !is.null(input$llave_primaria) &&
+                !is.null(input$agrupadores)) {
               llave_foranea <- input$llave_foranea
               llave_primaria <- input$llave_primaria
               agrupadores <- input$agrupadores
-              
-              tabla_temp_agrupadores <- opciones_agrupadores$tabla %>% 
+
+              tabla_temp_agrupadores <- opciones_agrupadores$tabla %>%
                 select(!!!rlang::syms(c(llave_primaria, agrupadores)))
-              
+
               coltypes_agrupador <- opciones_agrupadores$coltypes
-              
+
               llave_primaria_named <- llave_primaria
               names(llave_primaria_named) <- llave_foranea
-              
+
               n_cambios <- length(opciones$cambios) + 1
-              
+
               nombre_cambio <- paste(
-                n_cambios, "-", "Inner join por", 
+                n_cambios, "-", "Inner join por",
                 paste(llave_foranea, collapse = ", "))
-              
-              opciones$cambios[[nombre_cambio]] <- 
+
+              agrupadores_char <- purrr::map(
+                .x = agrupadores,
+                .f = function(y) {
+                  tipo_columna <- coltypes_agrupador[[y]]
+                  if (identical(tipo_columna, "character")) {
+                    return(y)
+                  } else {
+                    return(NULL)
+                  }
+                }
+              ) %>% unlist()
+
+              opciones$cambios[[nombre_cambio]] <-
                 function(x) {
                   inner_join(x = x, y = tabla_temp_agrupadores,
-                            by = llave_primaria_named,
-                            suffix = c(".datos", ".agrupadores"))
+                             by = llave_primaria_named,
+                             suffix = c(".datos", ".agrupadores"))
                 }
             }
           },
@@ -183,10 +190,10 @@ agrupadores_server <- function(id, opciones, opciones_agrupadores) {
           }
         )
       })
-      
-      
+
+
     }
   )
-  
+
 }
-  
+

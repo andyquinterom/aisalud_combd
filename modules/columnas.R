@@ -1,6 +1,6 @@
 columnas_ui <- function(id) {
   ns <- NS(id)
-  
+
   tagList(
     fluidRow(
       column(
@@ -57,27 +57,28 @@ columnas_ui <- function(id) {
 }
 
 columnas_server <- function(id, opciones) {
-  
+
   ns <- NS(id)
-  
+
   moduleServer(
     id = id,
     module = function(input, output, session) {
-      
+
       columnas <- reactiveValues(tabla = c())
-      
+
       observe({
         if (!is.null(opciones$tabla_original)) {
           tryCatch(
             expr = {
-              opciones$colnames <- opciones$tabla %>% 
+              opciones$colnames <- opciones$tabla %>%
                 colnames()
-              
-              opciones$coltypes <- opciones$tabla %>% 
-                head(0) %>% 
-                collect() %>% 
-                summarise_all(class)
-              
+
+              opciones$coltypes <- opciones$tabla %>%
+                head(0) %>%
+                collect() %>%
+                summarise_all(class) %>%
+                head(1)
+
               columnas$tabla <- data.frame(
                 "Columnas" = as.character(opciones$colnames))
             },
@@ -91,10 +92,10 @@ columnas_server <- function(id, opciones) {
               )
             }
           )
-          
+
         }
       })
-      
+
       observeEvent(opciones$colnames, {
         if (!is.null(opciones$colnames)) {
           output$columnas <- DT::renderDataTable(server = FALSE, {
@@ -114,32 +115,35 @@ columnas_server <- function(id, opciones) {
               formatStyle(
                 columns = 1,
                 backgroundColor = "white",
-                fontSize = '95%',
-                "white-space"="nowrap"
+                fontSize = "95%",
+                "white-space" = "nowrap"
               )
           })
         }
       })
 
       observeEvent(input$columnas_cell_edit, {
-        
+
         tryCatch(
           expr = {
             columna_cambio <- input$columnas_cell_edit$row
             viejo_nombre <- opciones$colnames[columna_cambio]
-            nuevo_nombre <- input$columnas_cell_edit$value %>% 
-              stri_trans_general(id = "Latin-ASCII") %>% 
-              str_replace_all("\\s", "_") %>% 
-              str_replace_all('[^0-9a-zA-Z]+', "_")
+            nuevo_nombre <- input$columnas_cell_edit$value %>%
+              stri_trans_general(id = "Latin-ASCII") %>%
+              str_replace_all("\\s", "_") %>%
+              str_replace_all("[^0-9a-zA-Z]+", "_")
             n_cambios <- length(opciones$cambios) + 1
-            
+
             if (nchar(nuevo_nombre) == 0) {
               nombre_cambio <- paste(n_cambios, "-", "eliminar", viejo_nombre)
-              opciones$cambios[[nombre_cambio]] <- 
+              opciones$cambios[[nombre_cambio]] <-
                 function(x) {select(x, -c(columna_cambio))}
             } else {
-              nombre_cambio <- paste(n_cambios, "-", viejo_nombre, "a", nuevo_nombre)
-              opciones$cambios[[nombre_cambio]] <- 
+              nombre_cambio <- paste(
+                n_cambios, "-",
+                viejo_nombre, "a",
+                nuevo_nombre)
+              opciones$cambios[[nombre_cambio]] <-
                 function(x) {rename(x, !!nuevo_nombre := columna_cambio)}
             }
           },
@@ -153,7 +157,7 @@ columnas_server <- function(id, opciones) {
             )
           }
         )
-        
+
       })
 
       # Resumen de la columna seleccionada
@@ -165,25 +169,25 @@ columnas_server <- function(id, opciones) {
       })
 
       # Convertir a carácter
-      
+
       observeEvent(input$convertir_caracter, {
         if (!is.null(input$columnas_rows_selected)) {
           col_mod <- opciones$colnames[input$columnas_rows_selected]
           col_mod_type <- opciones$coltypes[[input$columnas_rows_selected]]
           n_cambios <- length(opciones$cambios) + 1
-          
+
           nombre_cambio <- paste(
             n_cambios, "-", col_mod, "de", col_mod_type, "a", "character")
-          
-          if (col_mod_type != "character") {
-            opciones$cambios[[nombre_cambio]] <- 
+
+          if ("character" %notin% col_mod_type) {
+            opciones$cambios[[nombre_cambio]] <-
               function(x) {
                 mutate(
                   .data = x,
                   !!col_mod := as.character(!!as.name(col_mod)))
               }
           }
-          
+
         }
       })
 
@@ -194,12 +198,12 @@ columnas_server <- function(id, opciones) {
           col_mod <- opciones$colnames[input$columnas_rows_selected]
           col_mod_type <- opciones$coltypes[[input$columnas_rows_selected]]
           n_cambios <- length(opciones$cambios) + 1
-          
+
           nombre_cambio <- paste(
             n_cambios, "-", col_mod, "de", col_mod_type, "a", "numeric")
-          
-          if (col_mod_type != "numeric") {
-            opciones$cambios[[nombre_cambio]] <- 
+
+          if ("numeric" %notin% col_mod_type) {
+            opciones$cambios[[nombre_cambio]] <-
               function(x) {
                 if (opciones$sep_decimal == ",") {
                   mutate(
@@ -213,7 +217,7 @@ columnas_server <- function(id, opciones) {
                 }
               }
           }
-          
+
         }
       })
 
@@ -239,88 +243,25 @@ columnas_server <- function(id, opciones) {
           )
         )
       })
-      
+
       observeEvent(input$duplicados_confirmar, {
         if (!("" %in% input$duplicados_llaves)) {
           col_mod <- input$duplicados_llaves
           n_cambios <- length(opciones$cambios) + 1
-          
+
           nombre_cambio <- paste(
             n_cambios, "-", "Quitar duplicados por", paste(
               input$duplicados_llaves, collapse = ", "))
-          
-          opciones$cambios[[nombre_cambio]] <- 
+
+          opciones$cambios[[nombre_cambio]] <-
             function(x) {
-              group_by(.data = x, !!!rlang::syms(col_mod)) %>% 
-                mutate(across(.cols = everything(), .fns = first)) %>% 
-                ungroup() %>% 
+              group_by(.data = x, !!!rlang::syms(col_mod)) %>%
+                mutate(across(.cols = everything(), .fns = first)) %>%
+                ungroup() %>%
                 distinct()
             }
         }
       })
-
-      # Opcion de muestreo
-
-      # output$muestreo <- renderUI({
-      #   if (muestreo) {
-      #     tagList(
-      #       tags$br(),
-      #       fluidRow(
-      #         div(class = "botones_convertir_fila_2",
-      #             column(width = 12, actionButton(
-      #               inputId = ns("muestreo"),
-      #               width = "100%",
-      #               "Muestreo"
-      #             ))
-      #         ))
-      #     )
-      #   }
-      # })
-
-      # observeEvent(input$muestreo, {
-      #   n_unicos <- uniqueN(
-      #     x = datos$data_original[[datos$colnames[input$columnas_rows_selected]]])
-      #   showModal(
-      #     session = session,
-      #     ui = modalDialog(
-      #       title = "Muestreo",
-      #       easyClose = TRUE,
-      #       fade = TRUE,
-      #       tags$p("Esta opción ayuda a generar muestreos aleatorios de los datos."),
-      #       tags$p("Esta funcionalidad no es reversible."),
-      #       numericInput(inputId = ns("seed"), label = "Semilla", value = 100),
-      #       numericInput(inputId = ns("n_values"), 
-      #                    label = "Valor únicos",
-      #                    value = round(n_unicos/5),
-      #                    max = n_unicos,
-      #                    min = 1),
-      #       footer = actionButton(
-      #         inputId = ns("muestreo_confirmar"),
-      #         label = "Ejecutar muestreo")
-      #     )
-      #   )
-      # })
-
-      # observeEvent(input$muestreo_confirmar, {
-      #   set.seed(100)
-      #   muestreo_datos <- sample(
-      #     x = {
-      #       datos$data_original[[datos$colnames[input$columnas_rows_selected]]] %>%
-      #         unique()
-      #     },
-      #     size = input$n_values,
-      #     replace = FALSE)
-      #   
-      #   datos$data_original <- 
-      #     datos$data_original[get(datos$colnames[input$columnas_rows_selected])
-      #                         %in% muestreo_datos,]
-      #   
-      #   datos$data_table <- copy(datos$data_original)
-      #   datos$actualizar_resumen <- NULL
-      #   datos$actualizar_resumen <- TRUE
-      #   finalizado()
-      #   
-      # })
 
       # Quitar NA
 
@@ -330,12 +271,12 @@ columnas_server <- function(id, opciones) {
           col_mod <- opciones$colnames[input$columnas_rows_selected]
           col_mod_type <- opciones$coltypes[[input$columnas_rows_selected]]
           n_cambios <- length(opciones$cambios) + 1
-          
+
           nombre_cambio <- paste(
             n_cambios, "-", "Llenar vacios en", col_mod)
-          
+
           if (col_mod_type == "numeric") {
-            opciones$cambios[[nombre_cambio]] <- 
+            opciones$cambios[[nombre_cambio]] <-
               function(x) {
                 mutate(
                   .data = x,
@@ -345,7 +286,7 @@ columnas_server <- function(id, opciones) {
                   ))
               }
           } else if (col_mod_type == "character") {
-            opciones$cambios[[nombre_cambio]] <- 
+            opciones$cambios[[nombre_cambio]] <-
               function(x) {
                 mutate(
                   .data = x,
@@ -359,11 +300,11 @@ columnas_server <- function(id, opciones) {
               "No es posible llenar vacios para la columna."
             )
           }
-          
+
         }
       })
 
     }
   )
-   
+
 }

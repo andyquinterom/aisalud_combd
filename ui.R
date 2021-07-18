@@ -4,9 +4,6 @@ shinyUI(function(request) {tagList(
     tags$script(src = "document_ready.js"),
     tags$script(src = "ResizeSensor.js")
   ),
-  tags$div(
-    class = "header_combd"
-  ),
   fluidPage(
     tags$br(),
     sidebarLayout(
