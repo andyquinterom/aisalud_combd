@@ -1,4 +1,11 @@
-lazy_to_postgres <- function(datos, nombre, conn) {
+lazy_to_postgres <- function(datos, nombre, conn, overwrite = FALSE) {
+  if (overwrite) {
+    dbRemoveTable(
+      conn = conn,
+      name = nombre,
+      fail_if_missing = FALSE
+    )
+  }
   query <- paste0(
       'SELECT *
       INTO #tabla#

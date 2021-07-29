@@ -190,9 +190,10 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
             "numeric" %in% opciones$coltypes[[columna_cantidad]]
 
           removeModal(session = session)
-
-          if (opciones_nube$almacenamiento < opciones_nube$almacenamiento_total) {
+          if (opciones_nube$almacenamiento <
+            opciones_nube$almacenamiento_total) {
             nombre_tabla <- paste0("ais_", tolower(input$subir_tabla_nombre))
+            overwrite <- !identical(opciones$nombre_tabla, nombre_tabla)
             tryCatch(
               expr = {
                 withProgress(
@@ -226,7 +227,8 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
                         fecha_prestacion = !!as.name(columna_fecha),
                         valor = !!as.name(columna_valor),
                         cantidad = !!as.name(columna_cantidad),
-                        nro_identificacion = !!as.name(columna_nro_identificacion)) %>%
+                        nro_identificacion =
+                          !!as.name(columna_nro_identificacion)) %>%
                       {if (!fecha_incluida) {
                         mutate(., fecha_prestacion = TO_DATE(
                           fecha_prestacion, columna_fecha_formato))
@@ -247,7 +249,8 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
                       left_join(tbl(conn, "temporal_meses")) %>%
                       lazy_to_postgres(
                         nombre = nombre_tabla,
-                        conn = conn
+                        conn = conn,
+                        overwrite = overwrite
                       )
 
                     nombre_hash <- digest::digest(
