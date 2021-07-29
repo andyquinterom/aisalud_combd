@@ -49,6 +49,15 @@ columnas_ui <- function(id) {
                 "Quitar duplicados"
               ))
           )),
+          tags$br(),
+          fluidRow(
+            div(class = "botones_convertir_fila_2",
+              column(width = 12, actionButton(
+                inputId = ns("concat"),
+                width = "100%",
+                "Concatenar"
+              ))
+          )),
           uiOutput(ns("muestreo"))
         )
       )
@@ -262,6 +271,70 @@ columnas_server <- function(id, opciones) {
             }
         }
       })
+
+      # Concatenar
+
+      observe({
+        showModal(
+          session = session,
+          ui = modalDialog(
+            title = "Concatenar columnas",
+            easyClose = TRUE,
+            fade = TRUE,
+            selectizeInput(
+              inputId = ns("concat_cols"),
+              label = "Columnas (En orden)",
+              multiple = TRUE,
+              width = "100%",
+              choices = opciones$colnames
+            ),
+            textInput(
+              inputId = ns("concat_sep"),
+              label = "Separador",
+              width = "100%",
+              placeholder = "-"
+            ),
+            footer = actionButton(
+              inputId = ns("concat_confirmar"),
+              label = "Concatenar"
+            )
+          )
+        )
+      }) %>%
+        bindEvent(input$concat)
+
+      observe({
+        if (!("" %in% input$concat_cols)) {
+          col_mod <- input$concat_cols
+          col_nueva_name <- paste0(col_mod[1], "_cat")
+          separador <- input$concat_sep
+          n_cambios <- length(opciones$cambios) + 1
+
+
+          nombre_cambio <- paste(
+            n_cambios,
+            "-",
+            "Concatenar",
+            paste(
+              col_mod,
+              collapse = ", "
+            )
+          )
+
+          opciones$cambios[[nombre_cambio]] <-
+            function(x) {
+              mutate(
+                .data = x,
+                !!col_nueva_name := paste(
+                  !!!rlang::syms(col_mod),
+                  sep = separador
+                )
+              )
+            }
+
+        }
+      }) %>%
+        bindEvent(input$concat_confirmar)
 
       # Quitar NA
 
