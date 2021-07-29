@@ -253,21 +253,12 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
                         overwrite = overwrite
                       )
 
-                    nombre_hash <- digest::digest(
-                      object = nombre_tabla,
-                      algo = "xxhash32",
-                      seed = 1
-                    )
-
                     index_query <- str_replace_all(
-                      'CREATE INDEX #index_name#
-                      ON "#tabla#" USING btree
+                      'CREATE INDEX ON "#tabla#" USING btree
                       (fecha_prestacion ASC NULLS LAST)
                       INCLUDE(fecha_prestacion)',
-                      pattern = "#tabla#", replacement = nombre_tabla) %>%
-                        str_replace_all(
-                        pattern = "#index_name#",
-                        replacement = nombre_hash)
+                      pattern = "#tabla#",
+                      replacement = nombre_tabla)
 
                     dbExecute(
                       conn = conn,
@@ -568,7 +559,7 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
                 )
 
                 rename_query <- str_replace_all(
-                  'ALTER TABLE temporal_a1573b09
+                  'ALTER TABLE "#hash#"
                   RENAME TO "#nombre_tabla#"',
                   pattern = "#hash#",
                   replacement = nombre_tabla_hash
@@ -584,17 +575,12 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
                 )
 
                 index_query <- str_replace_all(
-                  'CREATE INDEX #index_name#
-                  ON "#tabla#" USING btree
+                  'CREATE INDEX ON "#tabla#" USING btree
                   (fecha_prestacion ASC NULLS LAST)
                   INCLUDE(fecha_prestacion)',
-                  pattern = "#index_name#",
-                  replacement = nombre_hash
-                ) %>%
-                  str_replace_all(
-                    pattern = "#tabla#",
-                    replacement = nombre_tabla
-                  )
+                  pattern = "#tabla#",
+                  replacement = nombre_tabla
+                )
 
                 dbExecute(
                   conn = conn,
