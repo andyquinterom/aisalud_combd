@@ -435,7 +435,7 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
                 if (!str_detect(
                     opciones_nube$tablas_almacenadas[
                       input$tablas_lista_rows_selected],
-                    "(^temporal_|^BASE)")) {
+                    "(^temporal_|^ais_BASE)")) {
                   dbRemoveTable(
                     con = conn,
                     name = opciones_nube$tablas_almacenadas[
@@ -462,7 +462,7 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
       output$ui_conectado <- renderUI({
         validar_temporal <- str_detect(
           opciones$nombre_tabla,
-          "(^temporal|^BASE)"
+          "(^temporal|^ais_BASE)"
         )
         if (!is.null(opciones_nube$almacenamiento_total)) {
           tagList(
