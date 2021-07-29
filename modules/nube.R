@@ -67,7 +67,6 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
               ui = modalDialog(
                 easyClose = TRUE,
                 title = "Nombre de la tabla",
-
                 textInput(
                   inputId = ns("subir_tabla_nombre"),
                   label = "",
@@ -470,6 +469,10 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
       })
 
       output$ui_conectado <- renderUI({
+        validar_temporal <- str_detect(
+          opciones$nombre_tabla,
+          "(^temporal|^BASE)"
+        )
         if (!is.null(opciones_nube$almacenamiento_total)) {
           tagList(
             fluidRow(
@@ -483,8 +486,16 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
             tags$br(),
             fluidRow(
               actionGroupButtons(
-                inputIds = ns(c("subir_tabla", "subir_agrupadores")),
-                labels = c("Subir tabla", "Subir agrupadores"),
+                inputIds = ns(c(
+                  "subir_tabla",
+                  if (!validar_temporal) "reemplazar_tabla",
+                  "subir_agrupadores"
+                )),
+                labels = c(
+                  "Subir tabla",
+                  if (!validar_temporal) "Actualizar tabla",
+                  "Subir agrupadores"
+                ),
                 fullwidth = TRUE
               )
             )
@@ -492,6 +503,121 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
         }
       })
 
+      observe({
+        confirmSweetAlert(
+          session = session,
+          inputId = ns("reemplazar_tabla_confirmar"),
+          title = "Confirmar actualización",
+          text = "Este cambio no es reversible. Perderá la opción de undo.",
+          btn_labels = c("Cancelar", "Confirmar")
+        )
+      }) %>%
+        bindEvent(input$reemplazar_tabla)
+
+      observe({
+        nombre_tabla <- opciones$nombre_tabla
+        nombre_hash <- digest::digest(
+          object = nombre_tabla,
+          algo = "xxhash32",
+          seed = 1
+        )
+        nombre_tabla_hash <- paste0("temporal_", nombre_hash)
+        tryCatch(
+          expr = {
+            withProgress(
+              message = "Subiendo base de datos a la nube.",
+              expr = {
+                if (!"temporal_meses" %in% dbListTables(conn)) {
+                  dbWriteTable(
+                    conn = conn,
+                    name = "temporal_meses",
+                    value = data.frame(
+                      ais_mes = 1:12,
+                      ais_mes_nombre = c(
+                        "Enero",
+                        "Febrero",
+                        "Marzo",
+                        "Abril",
+                        "Mayo",
+                        "Junio",
+                        "Julio",
+                        "Agosto",
+                        "Septiembre",
+                        "Octubre",
+                        "Noviembre",
+                        "Diciembre"
+                      )
+                    )
+                  )
+                }
+                opciones$tabla %>%
+                  mutate(
+                    valor = as.numeric(valor),
+                    cantidad = as.numeric(cantidad),
+                    ais_mes = month(fecha_prestacion),
+                    ais_anio = year(fecha_prestacion)) %>%
+                  left_join(tbl(conn, "temporal_meses")) %>%
+                  lazy_to_postgres(
+                    nombre = nombre_tabla_hash,
+                    conn = conn
+                  )
+
+                dbRemoveTable(
+                  conn = conn,
+                  name = nombre_tabla
+                )
+
+                rename_query <- str_replace_all(
+                  'ALTER TABLE temporal_a1573b09
+                  RENAME TO "#nombre_tabla#"',
+                  pattern = "#hash#",
+                  replacement = nombre_tabla_hash
+                ) %>%
+                  str_replace_all(
+                    pattern = "#nombre_tabla#",
+                    replacement = nombre_tabla
+                  )
+
+                dbExecute(
+                  conn = conn,
+                  statement = rename_query
+                )
+
+                index_query <- str_replace_all(
+                  'CREATE INDEX #index_name#
+                  ON "#tabla#" USING btree
+                  (fecha_prestacion ASC NULLS LAST)
+                  INCLUDE(fecha_prestacion)',
+                  pattern = "#index_name#",
+                  replacement = nombre_hash
+                ) %>%
+                  str_replace_all(
+                    pattern = "#tabla#",
+                    replacement = nombre_tabla
+                  )
+
+                dbExecute(
+                  conn = conn,
+                  statement = index_query
+                )
+
+                opciones$cambios <- list()
+
+              })
+          },
+          error = function(e) {
+            print(e)
+            showNotification(
+              ui = paste(
+                "Error subiendo la base de datos.", e, sep = "\n"),
+              type = "error",
+              session = session
+            )
+          }
+        )
+        opciones_nube$resultados_subidas <- NULL
+      }) %>%
+        bindEvent(input$reemplazar_tabla_confirmar)
 
     }
   )

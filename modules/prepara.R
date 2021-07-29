@@ -238,6 +238,8 @@ prepara_server <- function(id, opciones, prefix = "ais_") {
       observeEvent(input$nube_tablas, {
         if (input$nube_tablas != "Ninguno") {
 
+          opciones$nombre_tabla <- input$nube_tablas
+
           opciones$tabla_original <- tbl(conn, input$nube_tablas)
 
           opciones$tabla <- opciones$tabla_original

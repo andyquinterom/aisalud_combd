@@ -2,7 +2,8 @@ shinyServer(function(input, output, session) {
   
   opciones <- reactiveValues(
     cambios = list(),
-    sep_decimal = "."
+    sep_decimal = ".",
+    nombre_tabla = "temporal"
   )
   
   opciones_agrupadores <- reactiveValues(

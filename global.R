@@ -19,6 +19,7 @@ library(lubridate)
 library(parallel)
 library(shinycssloaders)
 library(shinyAce)
+library(digest)
 unlink(".RData")
 
 for (i in paste0("modules/", list.files("modules/"))) {
