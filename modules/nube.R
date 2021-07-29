@@ -30,10 +30,10 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
              opciones_nube$resultado_eliminacion)
       })
 
-      actualizar_tablas <- reactiveTimer()
+      opciones$actualizar_tablas <- reactiveTimer()
 
       observe({
-        actualizar_tablas()
+        opciones$actualizar_tablas()
         if (!is.null(conn)) {
           opciones_nube$tablas_almacenadas <- dbListTables(conn) %>% {
             if (identical(character(0), .)) {NULL} else {.}}
@@ -250,24 +250,21 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
                         conn = conn
                       )
 
-                    nombre_tabla_alpha_numeric <- gsub(
-                      pattern = "[^[:alnum:] ]",
-                      replacement = "",
-                      nombre_tabla
+                    nombre_hash <- digest::digest(
+                      object = nombre_tabla,
+                      algo = "xxhash32",
+                      seed = 1
                     )
 
                     index_query <- str_replace_all(
                       'CREATE INDEX #index_name#
-                  ON "#tabla#" USING btree
-                  (fecha_prestacion ASC NULLS LAST)
-                  INCLUDE(fecha_prestacion)',
-                  pattern = "#tabla#", replacement = nombre_tabla) %>%
-                      str_replace_all(
+                      ON "#tabla#" USING btree
+                      (fecha_prestacion ASC NULLS LAST)
+                      INCLUDE(fecha_prestacion)',
+                      pattern = "#tabla#", replacement = nombre_tabla) %>%
+                        str_replace_all(
                         pattern = "#index_name#",
-                        replacement = gsub(
-                          pattern = "([[:space:]])|(')|('$)|(\")|(\"$)|(\`)|(\`$)",
-                          replacement = "_",
-                          paste(nombre_tabla_alpha_numeric, "fechas_index")))
+                        replacement = nombre_hash)
 
                     dbExecute(
                       conn = conn,
@@ -601,7 +598,7 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
                   statement = index_query
                 )
 
-                opciones$cambios <- list()
+                opciones$tabla_actualizada <- contador()
 
               })
           },

@@ -235,8 +235,8 @@ prepara_server <- function(id, opciones, prefix = "ais_") {
         )
       })
 
-      observeEvent(input$nube_tablas, {
-        if (input$nube_tablas != "Ninguno") {
+      observe({
+        if (!input$nube_tablas %in% c("Ninguno", "")) {
 
           opciones$nombre_tabla <- input$nube_tablas
 
@@ -247,7 +247,8 @@ prepara_server <- function(id, opciones, prefix = "ais_") {
           opciones$cambios <- list()
 
         }
-      })
+      }) %>%
+        bindEvent(input$nube_tablas, opciones$tabla_actualizada)
 
       observe({
         tryCatch(
