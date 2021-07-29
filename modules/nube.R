@@ -17,6 +17,7 @@ nube_ui <- function(id) {
 nube_server <- function(id, opciones, opciones_agrupadores) {
 
   ns <- NS(id)
+  contador <- counter()
 
   moduleServer(
     id = id,
@@ -45,7 +46,9 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
               yes = 0,
               no = .)
 
-          opciones_nube$almacenamiento_total <- Sys.getenv("DATABASE_MAX_STORAGE") %>%
+          opciones_nube$almacenamiento_total <- Sys.getenv(
+            "DATABASE_MAX_STORAGE"
+          ) %>%
             as.numeric()
 
           opciones_nube$tablas_almacenadas <- dbListTables(conn) %>% {
@@ -57,12 +60,14 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
         if (!is.null(opciones$colnames)) {
           if (opciones_nube$almacenamiento <
               opciones_nube$almacenamiento_total) {
-            fecha_incluida <- "Date" %in% opciones$coltypes[["fecha_prestacion"]]
+            fecha_incluida <- "Date" %in%
+              opciones$coltypes[["fecha_prestacion"]]
             showModal(
               session = session,
               ui = modalDialog(
                 easyClose = TRUE,
                 title = "Nombre de la tabla",
+
                 textInput(
                   inputId = ns("subir_tabla_nombre"),
                   label = "",
@@ -437,15 +442,16 @@ nube_server <- function(id, opciones, opciones_agrupadores) {
           tryCatch(
             expr = {
               withProgress({
-                if (!str_detect(opciones_nube$tablas_almacenadas[
-                  input$tablas_lista_rows_selected], "^temporal_")) {
+                if (!str_detect(
+                    opciones_nube$tablas_almacenadas[
+                      input$tablas_lista_rows_selected],
+                    "(^temporal_|^BASE)")) {
                   dbRemoveTable(
                     con = conn,
                     name = opciones_nube$tablas_almacenadas[
                       input$tablas_lista_rows_selected]
                   )
-                  opciones_nube$resultado_eliminacion <- NULL
-                  opciones_nube$resultado_eliminacion <- TRUE
+                  opciones_nube$resultado_eliminacion <- contador()
                 } else {
                   showNotification("Las tablas temporales no se puede eliminar.")
                 }
